@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Center Analytics - Premium Dashboard</title>
+    <!-- Fontes do Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js para renderizar os gráficos interativos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Cores e Gradientes */
+            --bg-color: #050505;
+            --glass-bg: rgba(20, 20, 25, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            
+            --accent-cyan: #00f2fe;
+            --accent-purple: #4facfe;
+            --accent-pink: #ff0844;
+            --text-main: #ffffff;
+            --text-muted: #a0a0b0;
+            
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Gradientes Orgânicos Desfocados de Fundo */
+        .ambient-light {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: float 20s infinite alternate ease-in-out;
+        }
+        
+        .light-1 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            top: -100px;
+            left: -100px;
+        }
+
+        .light-2 {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, var(--accent-pink), #ffb199);
+            bottom: -200px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        .light-3 {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            top: 40%;
+            left: 30%;
+            opacity: 0.3;
+            animation-duration: 25s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 30px) scale(1.1); }
+            100% { transform: translate(-30px, 60px) scale(0.9); }
+        }
+
+        /* Utilidade: Glassmorphism */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Header Flutuante */
+        header {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1400px;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            border-radius: 100px;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            color: var(--accent-cyan);
+            font-size: 1.5rem;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--accent-cyan);
+        }
+
+        .btn-glow {
+            background: linear-gradient(45deg, var(--accent-purple), var(--accent-cyan));
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            color: #fff;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        /* Main Container */
+        main {
+            padding: 140px 5% 50px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, #fff, #a0a0b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            padding: 30px 40px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            max-width: 600px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 242, 254, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 2.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 15px;
+        }
+        
+        .upload-filename {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        /* Interactive Cards com Spotlight Effect */
+        .glass-card {
+            position: relative;
+            padding: 25px;
+            border-radius: 20px;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Efeito Spotlight no Hover (JS controla as variáveis --mouse-x/y) */
+        .glass-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(
+                600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(255, 255, 255, 0.08),
+                transparent 40%
+            );
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .metric-value {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #fff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metric-formula {
+            font-size: 0.75rem;
+            color: var(--accent-purple);
+            font-family: monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 8px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .metric-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Seção de Análise Detalhada (Charts Placeholders) */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+        }
+
+        .chart-card {
+            min-height: 280px;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 150px;
+            margin-top: 15px;
+            border-radius: 10px;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(255,255,255,0.02),
+                rgba(255,255,255,0.02) 10px,
+                rgba(255,255,255,0.05) 10px,
+                rgba(255,255,255,0.05) 20px
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border: 1px dashed rgba(255,255,255,0.1);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 60px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Responsividade */
+        @media (max-width: 900px) {
+            .hero h1 { font-size: 2.5rem; }
+            nav ul { display: none; }
+            .analysis-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fundo animado -->
+    <div class="ambient-light light-1"></div>
+    <div class="ambient-light light-2"></div>
+    <div class="ambient-light light-3"></div>
+
+    <!-- Header Flutuante -->
+    <header class="glass-panel">
+        <div class="logo">
+            <i class="fa-solid fa-chart-line"></i>
+            NexusMetrics
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#">Visão Geral</a></li>
+                <li><a href="#">Matriz de Eficácia</a></li>
+                <li><a href="#">Roteamento URA</a></li>
+                <li><a href="#">Detratores</a></li>
+            </ul>
+        </nav>
+        <button class="btn-glow">Exportar Relatório</button>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero glass-panel">
+            <h1>Inteligência Operacional <br> & Analytics de Eficiência</h1>
+            <p>Modelagem Matemática e Mapeamento de Schema para otimização de URA, tabulação e taxas de resolução de atendimento.</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <h3>Importar Base de Dados</h3>
+                <p style="margin: 5px 0 0; font-size: 0.9rem;">Clique ou arraste o arquivo gerado pelo sistema.</p>
+                <div class="upload-filename">
+                    Aguardando: <strong>a_demanda_foi_solucionada__tabulacoes__2026-08-05T15_30_43.870577803-03_00.xlsx</strong>
+                </div>
+                <input type="file" id="fileInput" accept=".xlsx" style="display: none;">
+            </div>
+        </section>
+
+        <!-- KPI Grid (Métricas Base) -->
+        <section class="dashboard-grid">
+            <!-- TRR -->
+            <div class="glass-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-title">Resolução Relatada (TRR)</span>
+                        <div class="card-icon"><i class="fa-solid fa-check-double"></i></div>
+                    </div>
+                    <div class="metric-value">0.00%</div>
+                    <div class="metric-formula">TRR = (∑[Nota="Sim"] / N) * 100</div>
+                    <p class="metric-desc">Mede diretamente a percepção do cliente sobre a solução da demanda (Proxy de CSAT).</p>
+                </div>
+            </div>
+
+            <!-- TRC & FCR -->
+            <div class="glass-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-title">Taxa de Rechamada (TRC)</span>
+                        <div class="card-icon" style="color: var(--accent-pink);"><i class="fa-solid fa-phone-slash"></i></div>
+                    </div>
+                    <div class="metric-value">0.00%</div>
+                    <div class="metric-formula">FCR = 1 - (Rechamadas em Δt / Total Único)</div>
+                    <p class="metric-desc">Volume de clientes que precisam insistir para resolver um problema. Saudável < 15%.</p>
+                </div>
+            </div>
+
+            <!-- Erlang (Intensidade) -->
+            <div class="glass-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-title">Intensidade de Tráfego (λ)</span>
+                        <div class="card-icon" style="color: #ffb199;"><i class="fa-solid fa-wave-square"></i></div>
+                    </div>
+                    <div class="metric-value">0.0</div>
+                    <div class="metric-formula">λ = ∑ Chamadas(15min) / 15</div>
+                    <p class="metric-desc">Aproximação de ocupação baseada na densidade de chegada agrupada na coluna de Data.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analysis Grid (Cruzamentos e Anomalias) -->
+        <section class="analysis-grid">
+            
+            <!-- Matriz de Eficácia -->
+            <div class="glass-card chart-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-title">Matriz de Eficácia Operacional</span>
+                        <div class="card-icon"><i class="fa-solid fa-network-wired"></i></div>
+                    </div>
+                    <p class="metric-desc">Probabilidade Condicional: P(Falha | Tabulação A). Isolamento de gargalos por departamento e motivo.</p>
+                    <div class="chart-placeholder">
+                        <i class="fa-solid fa-chart-pie" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        Aguardando importação de dados...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acurácia URA -->
+            <div class="glass-card chart-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-title">Alinhamento & Acurácia de URA</span>
+                        <div class="card-icon"><i class="fa-solid fa-route"></i></div>
+                    </div>
+                    <p class="metric-desc">Cruzamento Opção URA vs Tabulação final. Modela financeiramente o desperdício por transbordo inútil.</p>
+                    <div class="chart-placeholder">
+                        <i class="fa-solid fa-diagram-project" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        Aguardando importação de dados...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pareto 80/20 -->
+            <div class="glass-card chart-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-title">Análise de Pareto (Detratores)</span>
+                        <div class="card-icon"><i class="fa-solid fa-chart-column"></i></div>
+                    </div>
+                    <p class="metric-desc">Frequência acumulada F(k). Identificação dos 20% de motivos (Tabulação) que causam 80% do insucesso.</p>
+                    <div class="chart-placeholder">
+                        <i class="fa-solid fa-chart-bar" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        Aguardando importação de dados...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outliers -->
+            <div class="glass-card chart-card">
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-title">Anomalias de Reincidência (Z-Score)</span>
+                        <div class="card-icon" style="color: var(--accent-pink);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    </div>
+                    <p class="metric-desc">Z > 3 desvios padrões: Revela pontos de quebra crônica por Código do Cliente exigindo ação outbound.</p>
+                    <div class="chart-placeholder">
+                        <i class="fa-solid fa-bolt" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        Aguardando importação de dados...
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 NexusMetrics Analytics. Modelagem Funcional de URA e Atendimento.</p>
+    </footer>
+
+    <!-- Scripts de Interação UI/UX -->
+    <script>
+        // Efeito Spotlight (Mouse Tracking)
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                // Calcula a posição do mouse relativa ao card
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Define variáveis CSS dinâmicas para o centro do brilho
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // Interação de Upload (Simulação)
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                const uploadText = uploadArea.querySelector('.upload-filename');
+                
+                // Animação visual de sucesso (mock)
+                uploadArea.style.borderColor = '#00f2fe';
+                uploadArea.style.background = 'rgba(0, 242, 254, 0.1)';
+                uploadArea.querySelector('i').className = 'fa-solid fa-check-circle';
+                uploadArea.querySelector('h3').innerText = 'Arquivo Carregado';
+                uploadText.innerHTML = `Lido com sucesso: <strong>${fileName}</strong> <br><small>Processando schema de dados...</small>`;
+                
+                // Simula preenchimento dos dados do Dashboard com Gráficos Reais (Chart.js)
+                setTimeout(() => {
+                    // Atualiza as métricas principais
+                    document.querySelectorAll('.metric-value')[0].innerText = '73.4%';
+                    document.querySelectorAll('.metric-value')[1].innerText = '12.8%';
+                    document.querySelectorAll('.metric-value')[2].innerText = '4.2';
+                    
+                    const placeholders = document.querySelectorAll('.chart-placeholder');
+                    
+                    // Configuração de estilo global dos gráficos para combinar com o tema escuro
+                    Chart.defaults.color = '#a0a0b0';
+                    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+                    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+
+                    // 1. Matriz de Eficácia (Gráfico de Rosca)
+                    placeholders[0].style.background = 'transparent';
+                    placeholders[0].style.border = 'none';
+                    placeholders[0].innerHTML = '<canvas id="chartEficacia" style="max-height: 160px; width: 100%;"></canvas>';
+                    new Chart(document.getElementById('chartEficacia'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Sucesso', 'Retenção Útil', 'Transbordo Falho'],
+                            datasets: [{
+                                data: [65, 20, 15],
+                                backgroundColor: ['#00f2fe', '#4facfe', '#ff0844'],
+                                borderWidth: 0,
+                                hoverOffset: 5
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                    });
+
+                    // 2. Alinhamento URA (Gráfico de Barras)
+                    placeholders[1].style.background = 'transparent';
+                    placeholders[1].style.border = 'none';
+                    placeholders[1].innerHTML = '<canvas id="chartUra" style="max-height: 160px; width: 100%;"></canvas>';
+                    new Chart(document.getElementById('chartUra'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Vendas', 'Suporte', 'Faturas', 'Outros'],
+                            datasets: [{
+                                label: 'Acurácia (%)',
+                                data: [88, 52, 94, 31],
+                                backgroundColor: '#4facfe',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+
+                    // 3. Pareto 80/20 (Gráfico Misto: Barras + Linha)
+                    placeholders[2].style.background = 'transparent';
+                    placeholders[2].style.border = 'none';
+                    placeholders[2].innerHTML = '<canvas id="chartPareto" style="max-height: 160px; width: 100%;"></canvas>';
+                    new Chart(document.getElementById('chartPareto'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Lentidão', 'Senha', 'Fatura', 'Outros'],
+                            datasets: [
+                                { label: 'Volume de Chamados', data: [450, 200, 100, 50], backgroundColor: '#ffb199', borderRadius: 4, order: 2 },
+                                { label: 'Acumulado %', data: [56, 81, 93, 100], type: 'line', borderColor: '#ff0844', tension: 0.3, order: 1 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+
+                    // 4. Anomalias Z-Score (Gráfico de Linha com Preenchimento Neon)
+                    placeholders[3].style.background = 'transparent';
+                    placeholders[3].style.border = 'none';
+                    placeholders[3].innerHTML = '<canvas id="chartZscore" style="max-height: 160px; width: 100%;"></canvas>';
+                    new Chart(document.getElementById('chartZscore'), {
+                        type: 'line',
+                        data: {
+                            labels: ['10h', '11h', '12h', '13h', '14h', '15h'],
+                            datasets: [{
+                                label: 'Desvios Críticos (Z)',
+                                data: [0.2, 0.5, 3.8, 1.1, 0.4, 0.1],
+                                borderColor: '#ff0844',
+                                backgroundColor: 'rgba(255, 8, 68, 0.15)',
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: '#00f2fe',
+                                pointRadius: 4
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+
+                }, 1500);
+            }
+        });
+
+        // Efeito Tilt 3D sutil (opcional) nas chart-cards
+        const chartCards = document.querySelectorAll('.chart-card');
+        chartCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = ((y - centerY) / centerY) * -3; // Max 3 deg
+                const rotateY = ((x - centerX) / centerX) * 3;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>
