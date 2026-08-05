@@ -595,31 +595,30 @@
                     placeholders[0].style.border = 'none';
                     placeholders[0].innerHTML = '<canvas id="chartEficacia" style="max-height: 180px; width: 100%;"></canvas>';
                     
-                    // VARIÁVEIS MUTÁVEIS: Aqui você ou seu sistema injetarão os dados da planilha
-                    const dadosPlanilha = {
-                        sucesso: 65,
-                        retencao: 20,
-                        falha: 15
-                    };
-                    const totalRegistros = dadosPlanilha.sucesso + dadosPlanilha.retencao + dadosPlanilha.falha;
+                    // VARIÁVEIS MUTÁVEIS: Preparado para receber dados reais de planilhas dinamicamente
+                    const efic_sucesso = 65;
+                    const efic_retencao = 20;
+                    const efic_falha = 15;
+                    
+                    // O sistema calcula o total automaticamente
+                    const totalRegistros = efic_sucesso + efic_retencao + efic_falha;
 
                     new Chart(document.getElementById('chartEficacia'), {
                         type: 'doughnut',
                         data: {
                             labels: ['Sucesso', 'Retenção Útil', 'Transbordo Falho'],
                             datasets: [{
-                                data: [dadosPlanilha.sucesso, dadosPlanilha.retencao, dadosPlanilha.falha],
+                                data: [efic_sucesso, efic_retencao, efic_falha],
                                 backgroundColor: ['#00f2fe', '#4facfe', '#ff0844'],
-                                borderWidth: 3, // Espaçamento elegante entre as fatias
-                                borderColor: '#050505', // Cor do fundo para dar o efeito de "corte"
-                                hoverOffset: 10, // Salto do gráfico ao passar o mouse
-                                hoverBorderWidth: 0
+                                borderWidth: 4, // Cria o espaçamento elegante entre as fatias
+                                borderColor: '#050505', // Usa a cor de fundo para simular o "vazado"
+                                hoverOffset: 8 // Efeito tátil ao passar o mouse
                             }]
                         },
                         options: { 
                             responsive: true, 
-                            maintainAspectRatio: false, 
-                            cutout: '72%', // Deixa o anel mais fino e moderno
+                            maintainAspectRatio: false,
+                            cutout: '75%', // Afina o anel para um visual mais moderno
                             layout: {
                                 padding: { top: 10, bottom: 10 }
                             },
@@ -629,61 +628,55 @@
                                     labels: {
                                         color: '#a0a0b0',
                                         usePointStyle: true,
-                                        pointStyle: 'rectRounded', // Legendas iguais à imagem de referência
+                                        pointStyle: 'rectRounded',
                                         padding: 20,
                                         font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 }
                                     }
                                 },
                                 tooltip: {
-                                    backgroundColor: 'rgba(20, 20, 25, 0.95)', // Fundo dark glass
+                                    backgroundColor: 'rgba(20, 20, 25, 0.95)',
                                     titleColor: '#00f2fe',
                                     bodyColor: '#ffffff',
                                     borderColor: 'rgba(255, 255, 255, 0.1)',
                                     borderWidth: 1,
                                     padding: 15,
-                                    displayColors: true,
                                     usePointStyle: true,
                                     callbacks: {
-                                        // Interatividade: Calcula a % dinamicamente não importa o número
+                                        // Calcula e exibe a porcentagem real no hover
                                         label: function(context) {
                                             let valor = context.raw;
                                             let porcentagem = ((valor / totalRegistros) * 100).toFixed(1) + '%';
-                                            return ` Volume: ${valor} chamadas (${porcentagem})`;
+                                            return ` Volume: ${valor} registros (${porcentagem})`;
                                         }
                                     }
                                 }
                             }
                         },
-                        // Plugin Exclusivo: Adiciona o Total no centro do gráfico
+                        // Plugin Exclusivo: Renderiza o Total no centro da rosca
                         plugins: [{
                             id: 'textoCentral',
                             beforeDraw: function(chart) {
-                                var width = chart.width,
-                                    height = chart.height,
-                                    ctx = chart.ctx,
-                                    chartArea = chart.chartArea;
-                        
+                                var width = chart.width, height = chart.height, ctx = chart.ctx;
                                 ctx.restore();
-                                var fontSize = (height / 120).toFixed(2);
+                                
+                                var fontSize = (height / 110).toFixed(2);
                                 ctx.font = "800 " + fontSize + "em 'Plus Jakarta Sans'";
                                 ctx.textBaseline = "middle";
                                 ctx.fillStyle = "#ffffff";
-                        
-                                // Acha o centro exato do anel do gráfico
-                                var centerX = (chartArea.left + chartArea.right) / 2;
-                                var centerY = (chartArea.top + chartArea.bottom) / 2;
-                        
-                                var text = totalRegistros.toString(),
-                                    textX = centerX - (ctx.measureText(text).width / 2),
-                                    textY = centerY - 5;
                                 
-                                ctx.fillText(text, textX, textY);
+                                var text = totalRegistros.toString();
+                                // chartArea garante que o texto fique no centro do círculo, ignorando a legenda
+                                var centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+                                var centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+                                
+                                var textX = centerX - (ctx.measureText(text).width / 2);
+                                ctx.fillText(text, textX, centerY - 8);
                                 
                                 ctx.font = "500 " + (fontSize * 0.35) + "em 'Plus Jakarta Sans'";
                                 ctx.fillStyle = "#a0a0b0";
                                 var subText = "Registros";
                                 var subTextX = centerX - (ctx.measureText(subText).width / 2);
-                                ctx.fillText(subText, subTextX, centerY + 22);
+                                ctx.fillText(subText, subTextX, centerY + 18);
                                 ctx.save();
                             }
                         }]
