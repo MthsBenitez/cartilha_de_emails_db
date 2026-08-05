@@ -473,16 +473,63 @@
         <section class="analysis-grid">
             
             <!-- Matriz de Eficácia -->
-            <div class="glass-card chart-card">
+            <div class="glass-card chart-card" style="grid-column: 1 / -1;"> <!-- grid-column expande o card para tela cheia -->
                 <div class="card-content">
                     <div class="card-header">
-                        <span class="card-title">Matriz de Eficácia Operacional</span>
+                        <span class="card-title">Matriz de Eficácia Operacional <span style="font-size: 0.75rem; background: rgba(0,242,254,0.1); color: #00f2fe; padding: 4px 10px; border-radius: 12px; margin-left: 10px; font-weight: 700; letter-spacing: 1px;">B.I. AVANÇADO</span></span>
                         <div class="card-icon"><i class="fa-solid fa-network-wired"></i></div>
                     </div>
-                    <p class="metric-desc">Probabilidade Condicional: P(Falha | Tabulação A). Isolamento de gargalos por departamento e motivo.</p>
-                    <div class="chart-placeholder">
-                        <i class="fa-solid fa-chart-pie" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                        Aguardando importação de dados...
+                    
+                    <!-- Explicação Didática ("Para uma criança entender") -->
+                    <div style="background: rgba(255,255,255,0.02); border-left: 4px solid var(--accent-cyan); padding: 15px 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">
+                        <p style="font-size: 1rem; color: #fff; margin-bottom: 8px; font-weight: 600;">O que é essa Matriz? (De forma bem simples!)</p>
+                        <p class="metric-desc" style="font-size: 0.95rem;">
+                            Imagine que nosso atendimento é um grande escorregador: As chamadas <strong>Ciano</strong> deslizam direto para o final feliz. As chamadas <strong>Azuis</strong> dão algumas voltas a mais no caminho, mas chegam sozinhas. Já as <strong>Vermelhas</strong> ficam presas no meio do tubo e precisam que um adulto (atendente humano) vá lá resgatá-las.
+                        </p>
+                    </div>
+
+                    <!-- Layout Dividido: Gráfico à esquerda, B.I. à direita -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 30px; align-items: center;">
+                        
+                        <!-- Coluna do Gráfico (Idêntico a image_0896c7.png) -->
+                        <div style="flex: 1; min-width: 300px;">
+                            <div class="chart-placeholder" style="height: 280px;">
+                                <i class="fa-solid fa-chart-pie" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                Aguardando importação de dados...
+                            </div>
+                        </div>
+                        
+                        <!-- Coluna do Detalhamento Gerencial (Linha a Linha) -->
+                        <div style="flex: 1.5; min-width: 320px; display: flex; flex-direction: column; gap: 12px;">
+                            <h4 style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1.5px;">Análise Linha a Linha (100 Registros)</h4>
+                            
+                            <!-- Card Sucesso -->
+                            <div style="background: rgba(0, 242, 254, 0.04); border: 1px solid rgba(0, 242, 254, 0.15); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease;">
+                                <div>
+                                    <strong style="color: #00f2fe; display: block; font-size: 1.05rem; margin-bottom: 3px;">65 Atendimentos - Sucesso Absoluto</strong>
+                                    <span class="metric-desc">Resolução em D0. O cliente perguntou, o sistema respondeu instantaneamente. Custo operacional humano: R$ 0,00.</span>
+                                </div>
+                                <i class="fa-solid fa-check-circle" style="color: #00f2fe; font-size: 1.8rem; opacity: 0.8;"></i>
+                            </div>
+
+                            <!-- Card Retenção -->
+                            <div style="background: rgba(79, 172, 254, 0.04); border: 1px solid rgba(79, 172, 254, 0.15); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease;">
+                                <div>
+                                    <strong style="color: #4facfe; display: block; font-size: 1.05rem; margin-bottom: 3px;">20 Atendimentos - Retenção Útil</strong>
+                                    <span class="metric-desc">O cliente navegou por múltiplos submenus na URA. O esforço foi maior, mas o problema foi contido sem intervenção humana.</span>
+                                </div>
+                                <i class="fa-solid fa-shield-halved" style="color: #4facfe; font-size: 1.8rem; opacity: 0.8;"></i>
+                            </div>
+
+                            <!-- Card Falha -->
+                            <div style="background: rgba(255, 8, 68, 0.04); border: 1px solid rgba(255, 8, 68, 0.15); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease;">
+                                <div>
+                                    <strong style="color: #ff0844; display: block; font-size: 1.05rem; margin-bottom: 3px;">15 Atendimentos - Transbordo Falho</strong>
+                                    <span class="metric-desc"><strong>Alerta Gerencial:</strong> O robô não compreendeu a intenção (Falso Positivo). O cliente foi transferido irritado para o Call Center. Gargalo financeiro detectado.</span>
+                                </div>
+                                <i class="fa-solid fa-triangle-exclamation" style="color: #ff0844; font-size: 1.8rem; opacity: 0.8;"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
