@@ -1012,8 +1012,8 @@
             reader.readAsArrayBuffer(file);
         });
 
-        function showLoader() { loader.style.display = 'flex'; }
-        function hideLoader() { loader.style.display = 'none'; }
+        function showLoader() { document.getElementById('loader').style.display = 'flex'; }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
         
         // Função de Tratamento dos Dados (Formata sem desenhar na tela)
         function formatarDadosMestre(data) {
@@ -1066,8 +1066,6 @@
                 };
             });
         }
-
-        applyFiltersBtn.addEventListener('click', applyFilters);
 
         function applyFilters() {
             const selectedDate = filterDate.value;
