@@ -429,6 +429,8 @@
 
         .op-avatar {
             width: 45px; height: 45px;
+            min-width: 45px; /* Garante que não diminua */
+            flex-shrink: 0; /* Impede o efeito oval (esmagamento) */
             border-radius: 50%;
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             display: flex;
@@ -712,7 +714,7 @@
                 <div class="panel-header">
                     <div class="panel-title">
                         <i class="fa-solid fa-chart-column" style="color: var(--neon-purple);"></i>
-                        Tempo Total por Dia (Geral)
+                        Tempo Médio por Dia (Geral)
                     </div>
                 </div>
                 <div class="chart-container" id="main-chart">
@@ -960,20 +962,33 @@
                 return;
             }
 
-            // Group by date
+            // Agrupa por data para calcular a média
             const dailyData = {};
+            const dailyOperators = {};
+            
             filteredData.forEach(d => {
-                if(!dailyData[d.data]) dailyData[d.data] = 0;
+                if(!dailyData[d.data]) {
+                    dailyData[d.data] = 0;
+                    dailyOperators[d.data] = new Set();
+                }
                 dailyData[d.data] += d.duracaoSegundos;
+                dailyOperators[d.data].add(d.nome); // Conta operadores únicos no dia
             });
 
             const sortedDates = Object.keys(dailyData).sort();
             
-            // Need a max value for height scaling
-            const maxVal = Math.max(...Object.values(dailyData));
+            // Calcula as médias diárias
+            const dailyAverages = {};
+            sortedDates.forEach(date => {
+                const opsCount = dailyOperators[date].size || 1;
+                dailyAverages[date] = dailyData[date] / opsCount; 
+            });
+
+            // Encontra o valor máximo para a altura visual das barras
+            const maxVal = Math.max(...Object.values(dailyAverages), 0);
 
             sortedDates.forEach(date => {
-                const secs = dailyData[date];
+                const secs = dailyAverages[date];
                 const heightPercent = maxVal === 0 ? 0 : (secs / maxVal) * 100;
                 
                 const group = document.createElement('div');
@@ -984,7 +999,7 @@
                 
                 group.innerHTML = `
                     <div class="bar" style="height: ${heightPercent}%">
-                        <div class="bar-tooltip">${displayDate}<br><b>${formattedTime}</b></div>
+                        <div class="bar-tooltip">${displayDate}<br><b>${formattedTime}</b> (Média)</div>
                     </div>
                     <div class="bar-label">${displayDate}</div>
                 `;
@@ -1001,7 +1016,7 @@
                 return;
             }
 
-            // Agrupa por operador e contabiliza dias únicos para média precisa
+            // Agrupa por operador
             const opData = {};
             filteredData.forEach(d => {
                 if(!opData[d.nome]) {
@@ -1021,8 +1036,12 @@
                 }
             });
 
-            // Ordena pelo tempo total (do maior para o menor)
-            const sortedOps = Object.values(opData).sort((a,b) => b.tempoTotal - a.tempoTotal);
+            // Ordena pela MÉDIA DIÁRIA (do MENOR para o MAIOR)
+            const sortedOps = Object.values(opData).sort((a,b) => {
+                const mediaA = a.tempoTotal / (a.diasAtivos.size || 1);
+                const mediaB = b.tempoTotal / (b.diasAtivos.size || 1);
+                return mediaA - mediaB; // Ordem crescente
+            });
 
             sortedOps.forEach(op => {
                 const initial = op.nome.charAt(0).toUpperCase();
@@ -1034,6 +1053,7 @@
                 const totalDias = op.diasAtivos.size > 0 ? op.diasAtivos.size : 1;
                 const mediaDiaria = op.tempoTotal / totalDias;
                 
+                // Inversão visual: Média vira o destaque (tamanho maior e com cor)
                 item.innerHTML = `
                     <div class="op-info">
                         <div class="op-avatar">${initial}</div>
@@ -1043,15 +1063,18 @@
                         </div>
                     </div>
                     <div class="op-stats">
-                        <div class="time" style="font-size: 1rem;">${formatDuration(op.tempoTotal)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Total)</span></div>
-                        <div class="time" style="color: var(--neon-purple); font-size: 0.9rem; margin: 2px 0;">${formatDuration(mediaDiaria)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Média/Dia)</span></div>
+                        <div class="time" style="font-size: 1.1rem; color: var(--neon-cyan); font-weight: 700;">
+                            ${formatDuration(mediaDiaria)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Média/Dia)</span>
+                        </div>
+                        <div class="time" style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0;">
+                            ${formatDuration(op.tempoTotal)} <span style="font-size: 0.75rem; font-weight: normal;">(Total)</span>
+                        </div>
                         <div class="logins">${op.logins} sessões</div>
                     </div>
                 `;
                 listContainer.appendChild(item);
             });
         }
-
         // Modal Logic
         const modal = document.getElementById('detail-modal');
         const closeModal = document.getElementById('close-modal');
@@ -1060,13 +1083,14 @@
         window.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
 
         function openOperatorModal(nome) {
-            const opSessions = rawData.filter(d => d.nome === nome).sort((a,b) => moment(b.dataInicio).diff(moment(a.dataInicio)));
+            const opSessions = rawData.filter(d => d.nome === nome);
             
             if(opSessions.length === 0) return;
             
             const baseInfo = opSessions[0];
             const totalTime = opSessions.reduce((acc, curr) => acc + curr.duracaoSegundos, 0);
-            const uniqueDays = [...new Set(opSessions.map(d => d.data))].length || 1;
+            const uniqueDaysList = [...new Set(opSessions.map(d => d.data))];
+            const uniqueDays = uniqueDaysList.length || 1;
             const avgDaily = totalTime / uniqueDays;
 
             document.getElementById('modal-avatar').innerText = nome.charAt(0).toUpperCase();
@@ -1077,17 +1101,53 @@
             const timeline = document.getElementById('modal-timeline');
             timeline.innerHTML = '';
 
+            // Agrupar por dia (Formato Calendário)
+            const dailyOpData = {};
             opSessions.forEach(session => {
+                const dateKey = session.data;
+                if(!dailyOpData[dateKey]) {
+                    dailyOpData[dateKey] = {
+                        segundosTotais: 0,
+                        sessoesCount: 0
+                    };
+                }
+                dailyOpData[dateKey].segundosTotais += session.duracaoSegundos;
+                dailyOpData[dateKey].sessoesCount += 1;
+            });
+
+            // Ordenar do dia mais recente para o mais antigo
+            const sortedDays = Object.keys(dailyOpData).sort((a,b) => moment(b).diff(moment(a)));
+
+            sortedDays.forEach(dateStr => {
+                const dataObj = dailyOpData[dateStr];
                 const item = document.createElement('div');
                 item.className = 'timeline-item';
                 
-                const dataFormatada = moment(session.dataInicio).format('DD/MM/YYYY HH:mm');
-                const fimFormatado = session.dataFim !== 'N/A' ? moment(session.dataFim).format('HH:mm') : '...';
+                const displayDate = dateStr !== 'N/A' ? moment(dateStr).format('DD/MM/YYYY') : 'Data Desconhecida';
+                // Média de tempo por sessão naquele dia específico
+                const mediaSessao = dataObj.segundosTotais / dataObj.sessoesCount; 
                 
                 item.innerHTML = `
-                    <div class="timeline-time">${dataFormatada} - ${fimFormatado} (${formatDuration(session.duracaoSegundos)})</div>
-                    <div class="timeline-content">
-                        <strong>${session.operacao}</strong>
+                    <div class="timeline-time" style="font-weight: 600; font-size: 0.95rem; color: var(--neon-cyan);">
+                        <i class="fa-regular fa-calendar" style="margin-right: 5px;"></i> ${displayDate}
+                    </div>
+                    <div class="timeline-content" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03);">
+                        <div>
+                            <div style="color: var(--text-main); font-weight: 500;">
+                                Total no dia: <span style="color: #fff;">${formatDuration(dataObj.segundosTotais)}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                                <i class="fa-solid fa-arrow-right-to-bracket"></i> ${dataObj.sessoesCount} sessão(ões)
+                            </div>
+                        </div>
+                        <div style="text-align: right; border-left: 1px solid var(--glass-border); padding-left: 15px;">
+                            <div style="color: var(--neon-purple); font-weight: 700; font-size: 1.1rem;">
+                                ${formatDuration(mediaSessao)}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+                                Média por Sessão
+                            </div>
+                        </div>
                     </div>
                 `;
                 timeline.appendChild(item);
