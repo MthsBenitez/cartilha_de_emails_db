@@ -1696,6 +1696,7 @@
         }
 
         // --- NOVA LÓGICA: Vassoura Mágica (Limpeza de Inativos) ---
+        // --- NOVA LÓGICA: Vassoura Mágica (Limpeza de Inativos em Lote/Alta Performance) ---
         async function limparUsuariosSemSessao() {
             if(!confirm("⚠️ ATENÇÃO: Isso vai varrer e apagar TODOS os usuários do RH que nunca tiveram tempo de sessão registrado no sistema. Deseja continuar?")) return;
             
@@ -1710,23 +1711,32 @@
                     if(s && s.matricula) matriculasComSessao.add(s.matricula.toString());
                 });
 
-                // 2. Olha todos os 1500 cadastrados
+                // 2. Olha todos os cadastrados na base (incluindo os intrusos)
                 const usuariosSnap = await db.ref('usuarios').once('value');
                 const usuarios = usuariosSnap.val() || {};
                 
+                let pacotaoDeLimpeza = {};
                 let excluidos = 0;
                 
-                // 3. Exclui quem não está na lista de sessões (poupando o seu admin principal)
+                // 3. Prepara a lista negra (anota quem vai ser apagado na memória, sem travar a internet)
                 for(let mat in usuarios) {
                     if(!matriculasComSessao.has(mat) && mat !== 'gestaosoft') {
-                        await db.ref('usuarios/' + mat).remove();
+                        // Enviar "null" para o Firebase significa "delete isso imediatamente"
+                        pacotaoDeLimpeza[mat] = null; 
                         excluidos++;
                     }
                 }
                 
+                // 4. Executa a exclusão de todos de uma única vez (Alta Performance)
+                if (excluidos > 0) {
+                    await db.ref('usuarios').update(pacotaoDeLimpeza);
+                }
+                
                 hideLoader();
-                alert(`🧹 Limpeza Mágica concluída com sucesso! Foram excluídos ${excluidos} perfis sem uso.`);
-                abrirAdmin(); // Recarrega a tela já limpa
+                alert(`🧹 Limpeza Mágica concluída na velocidade da luz! Foram excluídos ${excluidos} perfis sem uso.`);
+                
+                // Recarrega a tela de gestão já limpinha
+                abrirAdmin(); 
                 
             } catch (error) {
                 hideLoader();
