@@ -735,10 +735,16 @@
                 <button class="btn btn-outline" id="apply-filters" style="padding: 6px 15px; border-color: var(--glass-highlight);">Filtrar</button>
                 
                 <!-- Botão de Importar -->
-                <label for="file-upload" class="btn btn-primary" id="btn-upload-label" style="padding: 6px 15px; margin-left: 5px;">
-                    <i class="fa-solid fa-file-excel"></i> Importar
+                <label for="file-upload" class="btn btn-primary" id="btn-upload-label" style="padding: 6px 15px; margin-left: 5px;" title="Importar Sessões (Tempo)">
+                    <i class="fa-solid fa-stopwatch"></i> Importar Sessões
                 </label>
                 <input type="file" id="file-upload" accept=".xlsx, .xls">
+
+                <!-- NOVO: Botão de Importar Base de RH -->
+                <label for="file-upload-rh" class="btn btn-primary" id="btn-upload-rh-label" style="padding: 6px 15px; margin-left: 10px; background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple));" title="Importar Cadastro de Colaboradores">
+                    <i class="fa-solid fa-id-card"></i> Importar RH
+                </label>
+                <input type="file" id="file-upload-rh" accept=".xlsx, .xls" style="display: none;">
             </div>
 
             <!-- Divisor Vertical Visual -->
@@ -874,6 +880,22 @@
             
             <div class="timeline" id="modal-timeline">
                 <!-- Timeline items injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalhes do Perfil RH -->
+    <div class="detail-view" id="profile-modal">
+        <div class="glass-panel detail-content interactive-card" style="max-width: 900px; padding: 30px;">
+            <button class="close-btn" onclick="fecharPerfil()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-address-card" style="color: var(--neon-pink);"></i>
+                    Dossiê do Colaborador
+                </div>
+            </div>
+            <div id="profile-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 20px;">
+                <!-- Os dados serão injetados aqui magicamente pelo JavaScript -->
             </div>
         </div>
     </div>
@@ -1140,6 +1162,70 @@
             
             reader.readAsArrayBuffer(file);
         });
+
+        // --- MOTOR DE IMPORTAÇÃO DE RH ---
+        const fileUploadRh = document.getElementById('file-upload-rh');
+        if(fileUploadRh) {
+            fileUploadRh.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                showLoader();
+                const reader = new FileReader();
+
+                reader.onload = async (event) => {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+
+                    // O parâmetro defval: "" garante que colunas vazias não sejam ignoradas
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    
+                    const usuariosSnap = await db.ref('usuarios').once('value');
+                    const usuariosExistentes = usuariosSnap.val() || {};
+                    let atualizacoes = {};
+
+                    json.forEach(row => {
+                        // Busca a matrícula aceitando variações comuns do Excel
+                        let matRaw = row['MATRÍCULA'] || row['MATRICULA'] || row['Matrícula'] || row['Matricula'];
+                        if(!matRaw) return;
+
+                        let mat = matRaw.toString().trim();
+                        if (mat === '0000' || mat === '') return;
+
+                        let perfilEnriquecido = usuariosExistentes[mat] || { primeiroAcesso: true };
+                        
+                        // Varre todas as colunas da planilha e salva no perfil do usuário
+                        for (let key in row) {
+                            // Limpa os nomes das colunas de pontos e barras para não bugar o banco de dados
+                            let safeKey = key.replace(/[.#$[\]/]/g, ' ').trim();
+                            perfilEnriquecido[safeKey] = row[key];
+                        }
+                        
+                        // Garante que a chave nativa 'nome' continue existindo para o sistema principal
+                        if(row['NOME']) perfilEnriquecido.nome = row['NOME'];
+
+                        atualizacoes[mat] = perfilEnriquecido;
+                    });
+
+                    if(Object.keys(atualizacoes).length > 0) {
+                        await db.ref('usuarios').update(atualizacoes);
+                        alert("Sucesso! Base de RH processada. Todos os cadastros e Dossiês foram atualizados.");
+                    } else {
+                        alert("Atenção: Nenhuma coluna de 'MATRÍCULA' válida foi encontrada na planilha.");
+                    }
+                    
+                    hideLoader();
+                    // Se o painel de gestão estiver aberto, recarrega para mostrar as mudanças
+                    if(document.getElementById('admin-modal').style.display === 'flex') {
+                        abrirAdmin(); 
+                    }
+                };
+
+                reader.readAsArrayBuffer(file);
+            });
+        }
 
         function showLoader() { document.getElementById('loader').style.display = 'flex'; }
         function hideLoader() { document.getElementById('loader').style.display = 'none'; }
@@ -1511,10 +1597,13 @@
                     const iconPromover = u.admin ? 'fa-arrow-down' : 'fa-arrow-up';
                     
                     actionButtons = `
+                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="abrirPerfil('${mat}')" title="Ver Dossiê RH">
+                            <i class="fa-solid fa-address-card"></i> Dossiê
+                        </button>
                         <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px;" onclick="toggleAdmin('${mat}', ${!u.admin})">
                             <i class="fa-solid ${iconPromover}"></i> ${btnPromoverTexto}
                         </button>
-                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="excluirUsuario('${mat}')">
+                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="excluirUsuario('${mat}')" title="Excluir">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     `;
@@ -1563,6 +1652,69 @@
             const m = Math.floor((totalSeconds % 3600) / 60);
             if(h > 0) return `${h}h ${m}m`;
             return `${m}m`;
+        }
+
+        // --- FUNÇÕES DE EXIBIÇÃO DE PERFIL RH ---
+        async function abrirPerfil(mat) {
+            showLoader();
+            const snap = await db.ref('usuarios/' + mat).once('value');
+            const u = snap.val();
+            hideLoader();
+
+            if(!u) return;
+
+            const container = document.getElementById('profile-content');
+            container.innerHTML = '';
+
+            // Oculta propriedades internas do sistema para não poluir o dossiê
+            const camposOcultos = ['senha', 'primeiroAcesso', 'admin', 'nome', 'MATRÍCULA', 'Matrícula', 'MATRICULA'];
+            const nomeExibicao = u.nome || u.NOME || 'Sem Nome Cadastrado';
+            const cargoExibicao = u.CARGO || u.Cargo || 'Cargo não informado';
+
+            // 1. Cabeçalho Principal (Nome, Cargo, Matrícula)
+            container.innerHTML += `
+                <div style="grid-column: 1 / -1; margin-bottom: 5px; padding-bottom: 20px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; gap: 20px;">
+                    <div class="op-avatar" style="width: 70px; height: 70px; font-size: 2rem;">${nomeExibicao.charAt(0).toUpperCase()}</div>
+                    <div>
+                        <h2 style="color: var(--neon-cyan); font-size: 1.6rem; margin-bottom: 4px;">${nomeExibicao}</h2>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 600;">
+                            <i class="fa-solid fa-briefcase" style="margin-right: 5px;"></i> ${cargoExibicao} | Matrícula: ${mat}
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            // 2. Loop Inteligente (Cria um card para cada coluna da planilha)
+            let hasExtraData = false;
+            for(let key in u) {
+                // Pula os campos de sistema
+                if(camposOcultos.includes(key)) continue;
+                
+                hasExtraData = true;
+                let value = u[key];
+                
+                // Formatação simples de datas se vier no padrão do Excel
+                if(value instanceof Date || (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/))) {
+                    value = moment(value).format('DD/MM/YYYY');
+                }
+
+                container.innerHTML += `
+                    <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s;" onmouseover="this.style.borderColor='var(--neon-pink)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+                        <p style="font-size: 0.75rem; color: var(--neon-pink); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">${key}</p>
+                        <p style="font-size: 1.05rem; font-weight: 500; color: #fff; word-break: break-word;">${value || '<span style="color: var(--text-muted)">-</span>'}</p>
+                    </div>
+                `;
+            }
+
+            if(!hasExtraData) {
+                container.innerHTML += `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 30px; font-style: italic;">Não existem dados de RH vinculados a esta matrícula ainda.</div>`;
+            }
+
+            document.getElementById('profile-modal').style.display = 'flex';
+        }
+
+        function fecharPerfil() {
+            document.getElementById('profile-modal').style.display = 'none';
         }
 
         // Mock Data Generator for Demonstration
