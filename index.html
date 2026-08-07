@@ -710,28 +710,38 @@
             <i class="fa-solid fa-tooth"></i>
             Dental Uni
         </div>
-        <div class="nav-actions">
-            <!-- Botões de Ação do Usuário -->
-            <button class="btn btn-outline" id="btn-admin" style="display: none; border-color: var(--neon-cyan);" onclick="abrirAdmin()">
-                <i class="fa-solid fa-users-gear"></i> Gestão
-            </button>
-            <button class="btn btn-outline" title="Trocar Senha" onclick="abrirTrocaSenhaGeral()">
-                <i class="fa-solid fa-key"></i>
-            </button>
-            <button class="btn btn-outline" style="border-color: var(--neon-pink); color: var(--neon-pink);" title="Sair do Sistema" onclick="deslogar()">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-
-            <!-- Botão de Importar -->
-            <label for="file-upload" class="btn btn-primary" id="btn-upload-label">
-                <i class="fa-solid fa-file-excel"></i> Importar XLSX
-            </label>
-            <input type="file" id="file-upload" accept=".xlsx, .xls">
+        <div class="nav-actions" style="display: flex; align-items: center; gap: 20px;">
             
-            <div class="filter-group" style="margin-left: 20px;">
-                <input type="date" class="input-glass" id="filter-date" title="Filtrar por data" style="padding: 8px 12px; font-size: 0.9rem;">
-                <button class="btn btn-outline" id="apply-filters" style="padding: 8px 15px;">Filtrar</button>
+            <!-- 1. Ilha de Controle de Dados -->
+            <div class="filter-group" style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 6px 15px; border-radius: var(--radius-full); border: 1px solid var(--glass-border);">
+                <input type="date" class="input-glass" id="filter-date" title="Filtrar por data" style="padding: 6px 10px; font-size: 0.9rem; border: none; background: transparent; outline: none; box-shadow: none;">
+                <button class="btn btn-outline" id="apply-filters" style="padding: 6px 15px; border-color: var(--glass-highlight);">Filtrar</button>
+                
+                <!-- Botão de Importar -->
+                <label for="file-upload" class="btn btn-primary" id="btn-upload-label" style="padding: 6px 15px; margin-left: 5px;">
+                    <i class="fa-solid fa-file-excel"></i> Importar
+                </label>
+                <input type="file" id="file-upload" accept=".xlsx, .xls">
             </div>
+
+            <!-- Divisor Vertical Visual -->
+            <div style="width: 1px; height: 35px; background: var(--glass-border);"></div>
+
+            <!-- 2. Ilha de Perfil e Sistema -->
+            <div class="user-group" style="display: flex; align-items: center; gap: 12px;">
+                <button class="btn btn-outline" id="btn-admin" style="display: none; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="abrirAdmin()">
+                    <i class="fa-solid fa-users-gear"></i> Gestão
+                </button>
+                
+                <button class="btn btn-outline" title="Trocar Senha" onclick="abrirTrocaSenhaGeral()" style="width: 42px; height: 42px; padding: 0; justify-content: center; border-radius: 12px;">
+                    <i class="fa-solid fa-key"></i>
+                </button>
+                
+                <button class="btn btn-outline" title="Sair do Sistema" onclick="deslogar()" style="width: 42px; height: 42px; padding: 0; justify-content: center; border-radius: 12px; border-color: var(--neon-pink); color: var(--neon-pink);">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+
         </div>
     </nav>
 
