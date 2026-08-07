@@ -731,10 +731,7 @@
                     <div class="kpi-trend"><i class="fa-solid fa-chart-line"></i> Sessões iniciadas</div>
                 </div>
             </div>
-        </section>
-
-        <!-- Dashboard Widgets -->
-        <section class="dashboard-content">
+            
             <!-- Left Chart Panel -->
             <div class="glass-panel interactive-card" style="padding: 30px;">
                 <div class="panel-header">
@@ -851,12 +848,61 @@
 
         function showLoader() { loader.style.display = 'flex'; }
         function hideLoader() { loader.style.display = 'none'; }
-        
-        /* 
-           O restante da função processRawData continua igual.
-           Substituímos apenas a lógica de filtro abaixo:
-        */
-        
+
+        // Processa os dados brutos da planilha
+        function processRawData(data) {
+            rawData = data.map(row => {
+                let valInicio = row['Data_inicio'] || row['Data_inicio '];
+                let valFim = row['Data_fim'] || row['Data_fim '];
+                
+                let start = valInicio ? moment(valInicio) : null;
+                let end = valFim ? moment(valFim) : null;
+                
+                let durationSecs = 0;
+                let tempo = row['Tempo'] || row['tempo'] || row['TEMPO'];
+                
+                if (tempo !== undefined && tempo !== null) {
+                    if (typeof tempo === 'string') {
+                        let parts = tempo.split(':');
+                        if (parts.length >= 2) { 
+                            let h = parseInt(parts[0]) || 0;
+                            let m = parseInt(parts[1]) || 0;
+                            let s = parseInt(parts[2]) || 0;
+                            durationSecs = (h * 3600) + (m * 60) + s;
+                        }
+                    } else if (tempo instanceof Date) {
+                        durationSecs = tempo.getUTCHours() * 3600 + tempo.getUTCMinutes() * 60 + tempo.getUTCSeconds();
+                    } else if (typeof tempo === 'number') {
+                        durationSecs = Math.round(tempo * 24 * 3600);
+                    }
+                }
+
+                if (durationSecs === 0 && start && start.isValid() && end && end.isValid()) {
+                    durationSecs = end.diff(start, 'seconds');
+                }
+
+                let dataFormatada = 'N/A';
+                let rowData = row['Data'] || row['Data '] || row['data'];
+                if (rowData) {
+                    dataFormatada = moment(rowData).format('YYYY-MM-DD');
+                } else if (start && start.isValid()) {
+                    dataFormatada = start.format('YYYY-MM-DD');
+                }
+
+                return {
+                    data: dataFormatada,
+                    operacao: row['Operação'] || 'Deslogar',
+                    nome: row['Nome'] || 'Desconhecido',
+                    matricula: row['Matricula'] || '0000',
+                    dataInicio: (start && start.isValid()) ? start.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    dataFim: (end && end.isValid()) ? end.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    duracaoSegundos: durationSecs > 0 ? durationSecs : 0
+                };
+            });
+            
+            applyFilters(); // Roda a renderização inicial
+        }
+
         applyFiltersBtn.addEventListener('click', applyFilters);
 
         function applyFilters() {
