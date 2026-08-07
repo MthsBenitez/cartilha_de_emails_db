@@ -21,6 +21,9 @@
 
     <!-- Chart.js para o Gráfico de Linha -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK Compat e Ferramentas -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
         :root {
@@ -604,6 +607,35 @@
             margin-top: auto;
         }
 
+        /* --- Sistema de Autenticação e Visibilidade --- */
+        nav, main, footer { 
+            display: none !important; 
+        }
+        
+        body.dashboard-visible nav { 
+            display: flex !important; 
+        }
+        
+        body.dashboard-visible main { 
+            display: flex !important; 
+        }
+        
+        body.dashboard-visible footer { 
+            display: block !important; 
+        }
+
+        .auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: var(--bg-base); z-index: 900;
+            display: flex; justify-content: center; align-items: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            width: 100%; max-width: 420px; padding: 40px; text-align: center;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+
         /* Loading overlay */
         .loader-overlay {
             display: none;
@@ -630,6 +662,42 @@
     </style>
 </head>
 <body>
+
+    <!-- Sistema de Autenticação -->
+    <div id="auth-overlay" class="auth-overlay">
+        
+        <!-- Tela Principal de Login -->
+        <div id="login-box" class="glass-panel interactive-card auth-card">
+            <div class="logo" style="justify-content: center; margin-bottom: 10px; font-size: 1.8rem;">
+                <i class="fa-solid fa-tooth"></i> Dental Uni
+            </div>
+            <h2 style="margin-bottom: 15px; font-weight: 700;">Acesso Restrito</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Insira sua matrícula ou credencial de gestão.</p>
+            
+            <input type="text" id="login-user" class="input-glass" placeholder="Matrícula ou 'gestaosoft'">
+            <input type="password" id="login-pass" class="input-glass" placeholder="Senha">
+            
+            <button class="btn btn-primary" style="justify-content: center; margin-top: 10px; padding: 12px;" onclick="fazerLogin()">
+                <i class="fa-solid fa-right-to-bracket"></i> Acessar Sistema
+            </button>
+            <p id="login-error" style="color: var(--neon-pink); font-size: 0.85rem; display: none; margin-top: 10px; font-weight: 600;"></p>
+        </div>
+
+        <!-- Tela de Alteração Obrigatória de Senha -->
+        <div id="new-pass-box" class="glass-panel interactive-card auth-card" style="display: none;">
+            <h2 style="color: var(--neon-cyan); font-weight: 700;">Bem-vindo!</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Por normas de segurança, é obrigatório alterar sua senha no primeiro acesso.</p>
+            
+            <input type="password" id="new-pass-1" class="input-glass" placeholder="Digite a Nova Senha">
+            <input type="password" id="new-pass-2" class="input-glass" placeholder="Confirme a Nova Senha">
+            
+            <button class="btn btn-primary" style="justify-content: center; margin-top: 10px; padding: 12px;" onclick="salvarNovaSenha()">
+                <i class="fa-solid fa-shield-halved"></i> Salvar e Entrar
+            </button>
+            <p id="new-pass-error" style="color: var(--neon-pink); font-size: 0.85rem; display: none; margin-top: 10px; font-weight: 600;"></p>
+        </div>
+
+    </div>
 
     <!-- Ambient Background -->
     <div class="ambient-orb orb-1"></div>
@@ -765,9 +833,116 @@
     </footer>
 
     <script>
-        // Global State
+        // --- MOTOR DO FIREBASE E ESTADOS GLOBAIS ---
+        const firebaseConfig = { databaseURL: "https://dental-uni-bonificacao-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let rawData = [];
         let filteredData = [];
+        let currentUser = null; 
+        let isAdmin = false;
+
+        // Função de Criptografia de Alta Segurança (SHA-256)
+        async function hashPassword(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Lógica Principal de Login
+        async function fazerLogin() {
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const errEl = document.getElementById('login-error');
+            
+            if(!user || !pass) { errEl.innerText = "Preencha matrícula e senha."; errEl.style.display = 'block'; return; }
+            
+            showLoader();
+            const passHash = await hashPassword(pass);
+            
+            // Regra de Ouro: Administrador GestaoSoft (Gera a si mesmo se for a primeira vez do sistema inteiro)
+            if(user === 'gestaosoft') {
+                const adminRef = db.ref('usuarios/gestaosoft');
+                const adminSnap = await adminRef.once('value');
+                if(!adminSnap.exists()) {
+                    await adminRef.set({ senha: await hashPassword('12345'), primeiroAcesso: true, admin: true });
+                }
+            }
+
+            // Validação no Banco de Dados
+            const userSnap = await db.ref('usuarios/' + user).once('value');
+            if(!userSnap.exists()) {
+                errEl.innerText = "Matrícula não localizada no sistema."; errEl.style.display = 'block'; hideLoader(); return;
+            }
+
+            const userData = userSnap.val();
+            if(userData.senha !== passHash) {
+                errEl.innerText = "Senha incorreta. Tente novamente."; errEl.style.display = 'block'; hideLoader(); return;
+            }
+
+            currentUser = user;
+            isAdmin = (user === 'gestaosoft' || userData.admin === true);
+
+            // Redireciona para Troca de Senha ou Libera o Painel
+            if(userData.primeiroAcesso) {
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('new-pass-box').style.display = 'flex';
+                hideLoader();
+            } else {
+                liberarDashboard();
+            }
+        }
+
+        // Lógica de Troca de Senha Obrigatória
+        async function salvarNovaSenha() {
+            const p1 = document.getElementById('new-pass-1').value;
+            const p2 = document.getElementById('new-pass-2').value;
+            const errEl = document.getElementById('new-pass-error');
+
+            if(p1.length < 5) { errEl.innerText = "A senha deve ter no mínimo 5 caracteres."; errEl.style.display = 'block'; return; }
+            if(p1 !== p2) { errEl.innerText = "As senhas não coincidem. Digite com atenção."; errEl.style.display = 'block'; return; }
+
+            showLoader();
+            const passHash = await hashPassword(p1);
+            await db.ref('usuarios/' + currentUser).update({ senha: passHash, primeiroAcesso: false });
+            liberarDashboard();
+        }
+
+        // Desbloqueia e Carrega a Interface Correta
+        function liberarDashboard() {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.body.classList.add('dashboard-visible');
+            
+            // Proteção Visual: Ocultar botão de importação para quem não é Admin
+            if(!isAdmin) {
+                const btnUpload = document.querySelector('label[for="file-upload"]');
+                if(btnUpload) btnUpload.style.display = 'none';
+            }
+
+            carregarDadosDaNuvem();
+        }
+
+        // Puxa os dados do Banco ao invés do arquivo local
+        function carregarDadosDaNuvem() {
+            showLoader();
+            db.ref('sessoes').on('value', (snap) => {
+                const data = snap.val();
+                if(data) {
+                    rawData = data;
+                    // Se não for admin, ele filtra a base inteira e vê SOMENTE os dados dele
+                    if(!isAdmin) {
+                        rawData = rawData.filter(d => d.matricula == currentUser);
+                    }
+                    applyFilters();
+                } else {
+                    rawData = [];
+                    applyFilters();
+                }
+                hideLoader();
+            });
+        }
         
         // DOM Elements
         const fileUpload = document.getElementById('file-upload');
@@ -798,16 +973,99 @@
             showLoader();
             const reader = new FileReader();
             
-            reader.onload = (event) => {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
+            // Processamento Automático de Planilha + Criação em Lote de Operadores
+        reader.onload = async (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            const json = XLSX.utils.sheet_to_json(worksheet);
+            const dadosTratados = formatarDadosMestre(json);
+            
+            // 1. Substitui toda a base de sessões na Nuvem
+            await db.ref('sessoes').set(dadosTratados);
+
+            // 2. Mágica de Gestão: Identifica Matrículas Novas e Cria Senhas Padrão
+            const matriculasEncontradas = [...new Set(dadosTratados.map(d => d.matricula))];
+            const senhaPadrao = await hashPassword('12345');
+            
+            const usuariosSnap = await db.ref('usuarios').once('value');
+            const usuariosExistentes = usuariosSnap.val() || {};
+
+            let novosUsuarios = {};
+            matriculasEncontradas.forEach(mat => {
+                if(mat && mat !== '0000' && !usuariosExistentes[mat]) {
+                    novosUsuarios[mat] = { senha: senhaPadrao, primeiroAcesso: true, nome: dadosTratados.find(d => d.matricula === mat).nome };
+                }
+            });
+
+            // Se achou usuários novos na planilha, injeta no banco
+            if(Object.keys(novosUsuarios).length > 0) {
+                await db.ref('usuarios').update(novosUsuarios);
+            }
+
+            hideLoader();
+            alert("Sucesso! Planilha processada, Banco Atualizado e Usuários Sincronizados.");
+        };
+        
+        reader.readAsArrayBuffer(file);
+        });
+
+        function showLoader() { loader.style.display = 'flex'; }
+        function hideLoader() { loader.style.display = 'none'; }
+        
+        // Função de Tratamento dos Dados (Formata sem desenhar na tela)
+        function formatarDadosMestre(data) {
+            return data.map(row => {
+                let valInicio = row['Data_inicio'] || row['Data_inicio '];
+                let valFim = row['Data_fim'] || row['Data_fim '];
                 
-                const json = XLSX.utils.sheet_to_json(worksheet);
-                processRawData(json);
-                hideLoader();
-            };
+                let start = valInicio ? moment(valInicio) : null;
+                let end = valFim ? moment(valFim) : null;
+                
+                let durationSecs = 0;
+                let tempo = row['Tempo'] || row['tempo'] || row['TEMPO'];
+                
+                if (tempo !== undefined && tempo !== null) {
+                    if (typeof tempo === 'string') {
+                        let parts = tempo.split(':');
+                        if (parts.length >= 2) { 
+                            let h = parseInt(parts[0]) || 0;
+                            let m = parseInt(parts[1]) || 0;
+                            let s = parseInt(parts[2]) || 0;
+                            durationSecs = (h * 3600) + (m * 60) + s;
+                        }
+                    } else if (tempo instanceof Date) {
+                        durationSecs = tempo.getUTCHours() * 3600 + tempo.getUTCMinutes() * 60 + tempo.getUTCSeconds();
+                    } else if (typeof tempo === 'number') {
+                        durationSecs = Math.round(tempo * 24 * 3600);
+                    }
+                }
+
+                if (durationSecs === 0 && start && start.isValid() && end && end.isValid()) {
+                    durationSecs = end.diff(start, 'seconds');
+                }
+
+                let dataFormatada = 'N/A';
+                let rowData = row['Data'] || row['Data '] || row['data'];
+                if (rowData) {
+                    dataFormatada = moment(rowData).format('YYYY-MM-DD');
+                } else if (start && start.isValid()) {
+                    dataFormatada = start.format('YYYY-MM-DD');
+                }
+
+                return {
+                    data: dataFormatada,
+                    operacao: row['Operação'] || 'Deslogar',
+                    nome: row['Nome'] || 'Desconhecido',
+                    matricula: (row['Matricula'] || '0000').toString(), // Transforma em texto para não dar erro no DB
+                    dataInicio: (start && start.isValid()) ? start.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    dataFim: (end && end.isValid()) ? end.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    duracaoSegundos: durationSecs > 0 ? durationSecs : 0
+                };
+            });
+        }
             
             reader.readAsArrayBuffer(file);
         });
