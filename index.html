@@ -839,26 +839,42 @@
 
         // Core Data Processing
         function processRawData(data) {
-            // Clean and standardize columns: Data, Operação, Nome, Matricula, Tempo, Data_inicio, Data_fim
+            // Clean and standardize columns
             rawData = data.map(row => {
-                // Handle different date formats or text
                 let start = moment(row['Data_inicio'] || row['Data_inicio ']);
                 let end = moment(row['Data_fim'] || row['Data_fim ']);
                 
                 let durationSecs = 0;
+                
+                // Tenta calcular diferença de início/fim primeiro
                 if(start.isValid() && end.isValid()) {
                     durationSecs = end.diff(start, 'seconds');
                 } else {
-                    // Try parsing tempo if start/end fail
-                    let tempo = row['Tempo'];
-                    if(typeof tempo === 'string') {
-                        let parts = tempo.split(':');
-                        if(parts.length === 3) durationSecs = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2]);
+                    // Fallback inteligente para a coluna "Tempo" (ex: 06:20:09)
+                    let tempo = row['Tempo'] || row['tempo'] || row['TEMPO'];
+                    if (tempo) {
+                        if (typeof tempo === 'string') {
+                            let parts = tempo.split(':');
+                            if (parts.length === 3) durationSecs = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2]);
+                        } else if (tempo instanceof Date) {
+                            durationSecs = tempo.getHours() * 3600 + tempo.getMinutes() * 60 + tempo.getSeconds();
+                        } else if (typeof tempo === 'number') {
+                            durationSecs = Math.round(tempo * 24 * 3600);
+                        }
                     }
                 }
 
+                // Corrige leitura de data vazia
+                let dataFormatada = 'N/A';
+                let rowData = row['Data'] || row['Data '] || row['data'];
+                if (rowData) {
+                    dataFormatada = moment(rowData).format('YYYY-MM-DD');
+                } else if (start.isValid()) {
+                    dataFormatada = start.format('YYYY-MM-DD');
+                }
+
                 return {
-                    data: moment(row['Data']).format('YYYY-MM-DD') || start.format('YYYY-MM-DD'),
+                    data: dataFormatada,
                     operacao: row['Operação'] || 'Deslogar',
                     nome: row['Nome'] || 'Desconhecido',
                     matricula: row['Matricula'] || '0000',
@@ -971,17 +987,27 @@
                 return;
             }
 
-            // Group by operator
+            // Agrupa por operador e contabiliza dias únicos para média precisa
             const opData = {};
             filteredData.forEach(d => {
                 if(!opData[d.nome]) {
-                    opData[d.nome] = { nome: d.nome, matricula: d.matricula, tempoTotal: 0, logins: 0 };
+                    opData[d.nome] = { 
+                        nome: d.nome, 
+                        matricula: d.matricula, 
+                        tempoTotal: 0, 
+                        logins: 0,
+                        diasAtivos: new Set()
+                    };
                 }
                 opData[d.nome].tempoTotal += d.duracaoSegundos;
                 opData[d.nome].logins += 1;
+                
+                if(d.data !== 'N/A') {
+                    opData[d.nome].diasAtivos.add(d.data);
+                }
             });
 
-            // Sort by total time descending
+            // Ordena pelo tempo total (do maior para o menor)
             const sortedOps = Object.values(opData).sort((a,b) => b.tempoTotal - a.tempoTotal);
 
             sortedOps.forEach(op => {
@@ -989,6 +1015,10 @@
                 const item = document.createElement('div');
                 item.className = 'operator-item';
                 item.onclick = () => openOperatorModal(op.nome);
+                
+                // Calcula média diária
+                const totalDias = op.diasAtivos.size > 0 ? op.diasAtivos.size : 1;
+                const mediaDiaria = op.tempoTotal / totalDias;
                 
                 item.innerHTML = `
                     <div class="op-info">
@@ -999,7 +1029,8 @@
                         </div>
                     </div>
                     <div class="op-stats">
-                        <div class="time">${formatDuration(op.tempoTotal)}</div>
+                        <div class="time" style="font-size: 1rem;">${formatDuration(op.tempoTotal)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Total)</span></div>
+                        <div class="time" style="color: var(--neon-purple); font-size: 0.9rem; margin: 2px 0;">${formatDuration(mediaDiaria)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Média/Dia)</span></div>
                         <div class="logins">${op.logins} sessões</div>
                     </div>
                 `;
