@@ -752,6 +752,11 @@
 
             <!-- 2. Ilha de Perfil e Sistema -->
             <div class="user-group" style="display: flex; align-items: center; gap: 12px;">
+                <!-- NOVO: Botão de Limpeza Mágica (Fica do lado de fora) -->
+                <button class="btn btn-outline" id="btn-limpar" style="display: none; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="limparUsuariosSemSessao()" title="Limpar base do RH">
+                    <i class="fa-solid fa-broom"></i> Limpar Ociosos
+                </button>
+
                 <button class="btn btn-outline" id="btn-admin" style="display: none; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="abrirAdmin()">
                     <i class="fa-solid fa-users-gear"></i> Gestão
                 </button>
@@ -836,10 +841,6 @@
                     <i class="fa-solid fa-users-gear" style="color: var(--neon-cyan);"></i>
                     Controle de Usuários
                 </div>
-                <!-- NOVO: Botão de Limpeza Mágica -->
-                <button class="btn btn-outline" style="border-color: var(--neon-pink); color: var(--neon-pink); font-size: 0.8rem; padding: 8px 15px;" onclick="limparUsuariosSemSessao()" title="Excluir matrículas que nunca logaram">
-                    <i class="fa-solid fa-broom"></i> Limpar Ociosos
-                </button>
             </div>
             <div class="operator-list" id="operator-list">
                 <div style="color: var(--text-muted); text-align: center; margin-top: 20px;">
@@ -1041,12 +1042,15 @@
         }
 
         // Desbloqueia e Carrega a Interface Correta com Personalização
+        // Desbloqueia e Carrega a Interface Correta com Personalização
         async function liberarDashboard() {
             document.getElementById('auth-overlay').style.display = 'none';
             document.body.classList.add('dashboard-visible');
             
             const btnUpload = document.getElementById('btn-upload-label');
+            const btnUploadRh = document.getElementById('btn-upload-rh-label');
             const btnAdmin = document.getElementById('btn-admin');
+            const btnLimpar = document.getElementById('btn-limpar');
             const tituloMenu = document.getElementById('user-greeting');
             const subTituloMenu = document.getElementById('user-subtitle');
             
@@ -1058,21 +1062,25 @@
             // Proteção Visual e Personalização
             if(!isAdmin) {
                 if(btnUpload) btnUpload.style.display = 'none';
+                if(btnUploadRh) btnUploadRh.style.display = 'none';
                 if(btnAdmin) btnAdmin.style.display = 'none';
+                if(btnLimpar) btnLimpar.style.display = 'none';
                 
-                // Redesign exclusivo para o Operador (Nome Gigante)
+                // Redesign exclusivo para o Operador
                 tituloMenu.innerText = `Olá, ${userName.split(' ')[0]}!`;
                 tituloMenu.style.fontSize = '4.5rem';
                 tituloMenu.style.color = 'var(--neon-cyan)';
                 subTituloMenu.innerText = "Bem-vindo ao seu painel exclusivo. Acompanhe seus resultados e histórico de sessões.";
             } else {
                 if(btnUpload) btnUpload.style.display = 'flex';
+                if(btnUploadRh) btnUploadRh.style.display = 'flex';
                 if(btnAdmin) btnAdmin.style.display = 'flex';
+                if(btnLimpar) btnLimpar.style.display = 'flex';
                 
                 // Visão Clássica do Administrador
                 tituloMenu.innerText = "Analítico de Sessões";
                 tituloMenu.style.fontSize = '3.5rem';
-                tituloMenu.style.color = ''; // Reseta para a cor padrão
+                tituloMenu.style.color = ''; 
                 subTituloMenu.innerText = "Monitore o tempo de login, frequências e produtividade dos operadores em tempo real.";
             }
 
