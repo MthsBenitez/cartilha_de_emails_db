@@ -1593,12 +1593,13 @@
             try {
                 const snap = await db.ref('usuarios').once('value');
                 const usuarios = snap.val() || {};
-                list.innerHTML = '';
+                
+                // O SEGREDO DA PERFORMANCE: Guardamos tudo nesta variável de memória primeiro
+                let htmlFinal = ''; 
                 
                 for(const mat in usuarios) {
                     const u = usuarios[mat] || {};
                     
-                    // Validações robustas para evitar quebra com dados corrompidos
                     const isPrimeiroAcesso = u.primeiroAcesso === true;
                     const isAdmin = u.admin === true;
 
@@ -1608,13 +1609,12 @@
                     
                     const role = isAdmin ? '<span style="color:var(--neon-purple); font-weight:bold;">Admin (Supervisor)</span>' : 'Operador';
                     
-                    // Tratamento Blindado: Força a conversão para texto e garante que não trave
+                    // Prevenção de quebra caso o nome esteja vazio na planilha
                     let nomeOriginal = u.nome || u.NOME || mat || 'Desconhecido';
                     const nomeExibicao = String(nomeOriginal).trim();
                     const inicial = nomeExibicao.length > 0 ? nomeExibicao.charAt(0).toUpperCase() : '?';
 
                     let actionButtons = '';
-                    // Bloqueia a exclusão ou rebaixamento do master 'gestaosoft'
                     if(mat !== 'gestaosoft') {
                         const btnPromoverTexto = isAdmin ? 'Rebaixar' : 'Tornar Admin';
                         const iconPromover = isAdmin ? 'fa-arrow-down' : 'fa-arrow-up';
@@ -1632,7 +1632,8 @@
                         `;
                     }
 
-                    list.innerHTML += `
+                    // A mágica: Adiciona o HTML na memória, sem forçar o navegador a desenhar ainda
+                    htmlFinal += `
                         <div class="operator-item" style="cursor: default; margin-bottom: 10px;">
                             <div class="op-info">
                                 <div class="op-avatar" style="font-size: 1rem; width: 40px; height: 40px;">${inicial}</div>
@@ -1648,14 +1649,16 @@
                     `;
                 }
                 
-                // Caso o banco esteja literalmente vazio
+                // Desenhamos na tela apenas UMA vez no final de forma ultra rápida
                 if (Object.keys(usuarios).length === 0) {
                     list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum usuário cadastrado.</div>';
+                } else {
+                    list.innerHTML = htmlFinal;
                 }
 
             } catch (error) {
                 console.error("Erro de Processamento na Gestão:", error);
-                list.innerHTML = '<div style="text-align: center; color: var(--neon-pink); padding: 20px;"><i class="fa-solid fa-bug" style="font-size: 2rem; margin-bottom: 15px;"></i><br>Ops! Encontramos um dado corrompido na base.<br>Atualize a página e tente importar o arquivo do RH novamente.</div>';
+                list.innerHTML = '<div style="text-align: center; color: var(--neon-pink); padding: 20px;"><i class="fa-solid fa-bug" style="font-size: 2rem; margin-bottom: 15px;"></i><br>Ops! Ocorreu um erro inesperado.<br>Atualize a página e tente novamente.</div>';
             }
         }
 
