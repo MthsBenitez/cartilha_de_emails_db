@@ -1187,8 +1187,8 @@
                     let atualizacoes = {};
 
                     json.forEach(row => {
-                        // Busca a matrícula aceitando variações comuns do Excel
-                        let matRaw = row['MATRÍCULA'] || row['MATRICULA'] || row['Matrícula'] || row['Matricula'];
+                        // Busca a matrícula aceitando a versão corrompida do Excel (MATRÃCULA)
+                        let matRaw = row['MATRÃCULA'] || row['MATRÍCULA'] || row['MATRICULA'] || row['Matrícula'] || row['Matricula'];
                         if(!matRaw) return;
 
                         let mat = matRaw.toString().trim();
@@ -1196,10 +1196,24 @@
 
                         let perfilEnriquecido = usuariosExistentes[mat] || { primeiroAcesso: true };
                         
+                        // Dicionário corretor: Arruma os caracteres quebrados (Encoding) do Excel
+                        const corrigirNomeColuna = (nome) => {
+                            if (!nome) return nome;
+                            return nome
+                                .replace(/MATRÃCULA/g, 'MATRÍCULA')
+                                .replace(/CÃ“DIGO/g, 'CÓDIGO')
+                                .replace(/OPERAÃ‡ÃƒO/g, 'OPERAÇÃO')
+                                .replace(/ADMISSÃƒO/g, 'ADMISSÃO')
+                                .replace(/FORMAÃ‡ÃƒO/g, 'FORMAÇÃO')
+                                .replace(/SAÃDA/g, 'SAÍDA')
+                                .replace(/AUSÃŠNCIAS/g, 'AUSÊNCIAS');
+                        };
+
                         // Varre todas as colunas da planilha e salva no perfil do usuário
                         for (let key in row) {
-                            // Limpa os nomes das colunas de pontos e barras para não bugar o banco de dados
-                            let safeKey = key.replace(/[.#$[\]/]/g, ' ').trim();
+                            // Arruma o nome da coluna se vier quebrado e limpa caracteres inválidos para o banco
+                            let keyArrumada = corrigirNomeColuna(key);
+                            let safeKey = keyArrumada.replace(/[.#$[\]/]/g, ' ').trim();
                             perfilEnriquecido[safeKey] = row[key];
                         }
                         
