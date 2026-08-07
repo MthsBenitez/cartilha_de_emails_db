@@ -663,6 +663,23 @@
 </head>
 <body>
 
+    <!-- Tela de Bloqueio de IP (Escudo Corporativo) -->
+    <div id="ip-block-overlay" class="auth-overlay" style="display: none; z-index: 9999;">
+        <div class="glass-panel interactive-card auth-card" style="border-color: var(--neon-purple); transform-style: flat;">
+            <div class="logo" style="justify-content: center; margin-bottom: 10px; font-size: 3rem; color: var(--neon-purple);">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 style="color: var(--neon-purple); font-weight: 800; font-size: 1.8rem;">Acesso Bloqueado</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 15px;">
+                Este sistema de Analytics é de uso exclusivo e restrito à rede interna da instituição.
+            </p>
+            <div style="margin-top: 20px; padding: 15px; background: rgba(204, 0, 0, 0.1); border-radius: 8px; border: 1px solid rgba(204, 0, 0, 0.3);">
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px;">Seu endereço atual não possui permissão:</p>
+                <p id="user-current-ip" style="color: #fff; font-weight: 700; font-size: 1.1rem; letter-spacing: 2px;">Verificando IP...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Sistema de Autenticação -->
     <div id="auth-overlay" class="auth-overlay">
         
@@ -881,6 +898,54 @@
         let filteredData = [];
         let currentUser = null; 
         let isAdmin = false;
+
+        // --- BLOQUEIO DE IP CORPORATIVO ---
+        // Aqui você coloca os IPs da empresa. Já coloquei o seu novo. 
+        // Se a empresa usar outros, basta adicionar entre aspas separados por vírgula.
+        const ipsPermitidos = ['170.82.246.125', 'COLOQUE_OUTRO_AQUI_SE_PRECISAR']; 
+
+        async function verificarSegurancaDeRede() {
+            try {
+                // 🔑 CHAVE MESTRA DE EMERGÊNCIA
+                // Se o IP mudar e você for bloqueado, acesse a página adicionando "?destravar=dental2026" no link
+                // Exemplo: c:/pasta/index.html?destravar=dental2026
+                const parametrosUrl = new URLSearchParams(window.location.search);
+                if(parametrosUrl.get('destravar') === 'dental2026') {
+                    const loginBox = document.getElementById('login-box');
+                    if(loginBox) loginBox.style.display = 'flex';
+                    return; // Cancela a checagem de IP e abre a porta
+                }
+
+                // Esconde a caixa de login temporariamente
+                const loginBox = document.getElementById('login-box');
+                if(loginBox) loginBox.style.display = 'none';
+                
+                // Pergunta à API pública qual é o IP (agora lê IPv4 e IPv6)
+                const response = await fetch('https://api64.ipify.org?format=json');
+                const data = await response.json();
+                const ipUsuario = data.ip;
+                
+                // Verifica se o IP está na lista de permitidos
+                if (ipsPermitidos.includes(ipUsuario)) {
+                    // IP Válido: Mostra a tela de login normalmente
+                    if(loginBox) loginBox.style.display = 'flex';
+                } else {
+                    // IP Inválido: Levanta o Escudo Vermelho Neon
+                    document.getElementById('auth-overlay').style.display = 'none';
+                    document.getElementById('ip-block-overlay').style.display = 'flex';
+                    document.getElementById('user-current-ip').innerText = ipUsuario;
+                }
+            } catch (error) {
+                console.error("Erro no sensor de rede. Liberando por segurança.", error);
+                // Se a internet falhar, libera a tela de login para o sistema não travar
+                if(document.getElementById('login-box')) {
+                    document.getElementById('login-box').style.display = 'flex';
+                }
+            }
+        }
+
+        // Executa a checagem automaticamente quando a página carrega
+        window.addEventListener('load', verificarSegurancaDeRede);
 
         // Função de Criptografia de Alta Segurança (SHA-256)
         async function hashPassword(message) {
