@@ -838,16 +838,22 @@
         function hideLoader() { loader.style.display = 'none'; }
 
         // Core Data Processing
+        // Core Data Processing
         function processRawData(data) {
             // Clean and standardize columns
             rawData = data.map(row => {
-                let start = moment(row['Data_inicio'] || row['Data_inicio ']);
-                let end = moment(row['Data_fim'] || row['Data_fim ']);
+                // 1. Pega os valores brutos primeiro
+                let valInicio = row['Data_inicio'] || row['Data_inicio '];
+                let valFim = row['Data_fim'] || row['Data_fim '];
+                
+                // 2. Só instancia o moment se o valor existir de fato na planilha
+                let start = valInicio ? moment(valInicio) : null;
+                let end = valFim ? moment(valFim) : null;
                 
                 let durationSecs = 0;
                 
-                // Tenta calcular diferença de início/fim primeiro
-                if(start.isValid() && end.isValid()) {
+                // 3. Tenta calcular diferença de início/fim apenas se as variáveis existirem E forem válidas
+                if(start && start.isValid() && end && end.isValid()) {
                     durationSecs = end.diff(start, 'seconds');
                 } else {
                     // Fallback inteligente para a coluna "Tempo" (ex: 06:20:09)
@@ -855,9 +861,12 @@
                     if (tempo) {
                         if (typeof tempo === 'string') {
                             let parts = tempo.split(':');
-                            if (parts.length === 3) durationSecs = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2]);
+                            if (parts.length === 3) {
+                                durationSecs = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2]);
+                            }
                         } else if (tempo instanceof Date) {
-                            durationSecs = tempo.getHours() * 3600 + tempo.getMinutes() * 60 + tempo.getSeconds();
+                            // Usamos métodos UTC para evitar que o fuso horário local distorça as horas lidas do Excel
+                            durationSecs = tempo.getUTCHours() * 3600 + tempo.getUTCMinutes() * 60 + tempo.getUTCSeconds();
                         } else if (typeof tempo === 'number') {
                             durationSecs = Math.round(tempo * 24 * 3600);
                         }
@@ -869,7 +878,7 @@
                 let rowData = row['Data'] || row['Data '] || row['data'];
                 if (rowData) {
                     dataFormatada = moment(rowData).format('YYYY-MM-DD');
-                } else if (start.isValid()) {
+                } else if (start && start.isValid()) {
                     dataFormatada = start.format('YYYY-MM-DD');
                 }
 
@@ -878,8 +887,9 @@
                     operacao: row['Operação'] || 'Deslogar',
                     nome: row['Nome'] || 'Desconhecido',
                     matricula: row['Matricula'] || '0000',
-                    dataInicio: start.isValid() ? start.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
-                    dataFim: end.isValid() ? end.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    // Valida corretamente o formata de data do momento
+                    dataInicio: (start && start.isValid()) ? start.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    dataFim: (end && end.isValid()) ? end.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
                     duracaoSegundos: durationSecs > 0 ? durationSecs : 0
                 };
             });
