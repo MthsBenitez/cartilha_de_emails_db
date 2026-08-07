@@ -1131,8 +1131,13 @@
                     `;
                 });
             }
-            modal.style.display = 'flex';
+            document.getElementById('detail-modal').style.display = 'flex';
         }
+
+        // --- NOVA LÓGICA: Fechar o Modal ao clicar no X ---
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('detail-modal').style.display = 'none';
+        });
 
         // Utilities
         function formatDuration(totalSeconds) {
