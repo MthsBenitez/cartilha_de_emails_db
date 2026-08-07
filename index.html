@@ -1590,53 +1590,72 @@
             const list = document.getElementById('admin-user-list');
             list.innerHTML = '<div style="text-align: center; color: var(--text-muted);"><div class="spinner" style="margin: 0 auto 10px;"></div>Carregando equipe...</div>';
             
-            const snap = await db.ref('usuarios').once('value');
-            const usuarios = snap.val() || {};
-            list.innerHTML = '';
-            
-            for(const mat in usuarios) {
-                const u = usuarios[mat];
-                // Mostra se o usuário já trocou a senha padrão
-                const statusSenha = u.primeiroAcesso 
-                    ? '<span style="color:var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> Senha Padrão</span>' 
-                    : '<span style="color:var(--neon-cyan);"><i class="fa-solid fa-check"></i> Senha Alterada</span>';
+            try {
+                const snap = await db.ref('usuarios').once('value');
+                const usuarios = snap.val() || {};
+                list.innerHTML = '';
                 
-                const role = u.admin ? '<span style="color:var(--neon-purple); font-weight:bold;">Admin (Supervisor)</span>' : 'Operador';
-                const nomeExibicao = u.nome || mat;
-
-                let actionButtons = '';
-                // Bloqueia a exclusão ou rebaixamento do master 'gestaosoft'
-                if(mat !== 'gestaosoft') {
-                    const btnPromoverTexto = u.admin ? 'Rebaixar' : 'Tornar Admin';
-                    const iconPromover = u.admin ? 'fa-arrow-down' : 'fa-arrow-up';
+                for(const mat in usuarios) {
+                    const u = usuarios[mat] || {};
                     
-                    actionButtons = `
-                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="abrirPerfil('${mat}')" title="Ver Dossiê RH">
-                            <i class="fa-solid fa-address-card"></i> Dossiê
-                        </button>
-                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px;" onclick="toggleAdmin('${mat}', ${!u.admin})">
-                            <i class="fa-solid ${iconPromover}"></i> ${btnPromoverTexto}
-                        </button>
-                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="excluirUsuario('${mat}')" title="Excluir">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    `;
-                }
+                    // Validações robustas para evitar quebra com dados corrompidos
+                    const isPrimeiroAcesso = u.primeiroAcesso === true;
+                    const isAdmin = u.admin === true;
 
-                list.innerHTML += `
-                    <div class="operator-item" style="cursor: default; margin-bottom: 10px;">
-                        <div class="op-info">
-                            <div class="op-avatar" style="font-size: 1rem; width: 40px; height: 40px;">${nomeExibicao.charAt(0).toUpperCase()}</div>
-                            <div class="op-details">
-                                <h4 style="margin-bottom: 2px;">${nomeExibicao} <span style="font-size:0.7rem; font-weight:normal; color:var(--text-muted);">(${mat})</span></h4>
-                                <p>Acesso: ${role} | Status: ${statusSenha}</p>
+                    const statusSenha = isPrimeiroAcesso 
+                        ? '<span style="color:var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> Senha Padrão</span>' 
+                        : '<span style="color:var(--neon-cyan);"><i class="fa-solid fa-check"></i> Senha Alterada</span>';
+                    
+                    const role = isAdmin ? '<span style="color:var(--neon-purple); font-weight:bold;">Admin (Supervisor)</span>' : 'Operador';
+                    
+                    // Tratamento Blindado: Força a conversão para texto e garante que não trave
+                    let nomeOriginal = u.nome || u.NOME || mat || 'Desconhecido';
+                    const nomeExibicao = String(nomeOriginal).trim();
+                    const inicial = nomeExibicao.length > 0 ? nomeExibicao.charAt(0).toUpperCase() : '?';
+
+                    let actionButtons = '';
+                    // Bloqueia a exclusão ou rebaixamento do master 'gestaosoft'
+                    if(mat !== 'gestaosoft') {
+                        const btnPromoverTexto = isAdmin ? 'Rebaixar' : 'Tornar Admin';
+                        const iconPromover = isAdmin ? 'fa-arrow-down' : 'fa-arrow-up';
+                        
+                        actionButtons = `
+                            <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="abrirPerfil('${mat}')" title="Ver Dossiê RH">
+                                <i class="fa-solid fa-address-card"></i> Dossiê
+                            </button>
+                            <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px;" onclick="toggleAdmin('${mat}', ${!isAdmin})">
+                                <i class="fa-solid ${iconPromover}"></i> ${btnPromoverTexto}
+                            </button>
+                            <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="excluirUsuario('${mat}')" title="Excluir">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        `;
+                    }
+
+                    list.innerHTML += `
+                        <div class="operator-item" style="cursor: default; margin-bottom: 10px;">
+                            <div class="op-info">
+                                <div class="op-avatar" style="font-size: 1rem; width: 40px; height: 40px;">${inicial}</div>
+                                <div class="op-details">
+                                    <h4 style="margin-bottom: 2px;">${nomeExibicao} <span style="font-size:0.7rem; font-weight:normal; color:var(--text-muted);">(${mat})</span></h4>
+                                    <p>Acesso: ${role} | Status: ${statusSenha}</p>
+                                </div>
+                            </div>
+                            <div class="op-stats" style="display:flex; gap:10px; align-items: center;">
+                                ${actionButtons}
                             </div>
                         </div>
-                        <div class="op-stats" style="display:flex; gap:10px; align-items: center;">
-                            ${actionButtons}
-                        </div>
-                    </div>
-                `;
+                    `;
+                }
+                
+                // Caso o banco esteja literalmente vazio
+                if (Object.keys(usuarios).length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum usuário cadastrado.</div>';
+                }
+
+            } catch (error) {
+                console.error("Erro de Processamento na Gestão:", error);
+                list.innerHTML = '<div style="text-align: center; color: var(--neon-pink); padding: 20px;"><i class="fa-solid fa-bug" style="font-size: 2rem; margin-bottom: 15px;"></i><br>Ops! Encontramos um dado corrompido na base.<br>Atualize a página e tente importar o arquivo do RH novamente.</div>';
             }
         }
 
