@@ -711,10 +711,23 @@
             Dental Uni
         </div>
         <div class="nav-actions">
-            <label for="file-upload" class="btn btn-primary">
+            <!-- Botões de Ação do Usuário -->
+            <button class="btn btn-outline" id="btn-admin" style="display: none; border-color: var(--neon-cyan);" onclick="abrirAdmin()">
+                <i class="fa-solid fa-users-gear"></i> Gestão
+            </button>
+            <button class="btn btn-outline" title="Trocar Senha" onclick="abrirTrocaSenhaGeral()">
+                <i class="fa-solid fa-key"></i>
+            </button>
+            <button class="btn btn-outline" style="border-color: var(--neon-pink); color: var(--neon-pink);" title="Sair do Sistema" onclick="deslogar()">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+
+            <!-- Botão de Importar -->
+            <label for="file-upload" class="btn btn-primary" id="btn-upload-label">
                 <i class="fa-solid fa-file-excel"></i> Importar XLSX
             </label>
             <input type="file" id="file-upload" accept=".xlsx, .xls">
+            
             <div class="filter-group" style="margin-left: 20px;">
                 <input type="date" class="input-glass" id="filter-date" title="Filtrar por data" style="padding: 8px 12px; font-size: 0.9rem;">
                 <button class="btn btn-outline" id="apply-filters" style="padding: 8px 15px;">Filtrar</button>
@@ -725,8 +738,8 @@
     <!-- Main Content -->
     <main>
         <header class="hero">
-            <h1>Analítico de Sessões</h1>
-            <p>Monitore o tempo de login, frequências e produtividade dos operadores em tempo real com uma interface imersiva e responsiva.</p>
+            <h1 id="user-greeting">Analítico de Sessões</h1>
+            <p id="user-subtitle">Monitore o tempo de login, frequências e produtividade dos operadores em tempo real com uma interface imersiva e responsiva.</p>
         </header>
 
         <!-- KPIs Grid (Agora Clicáveis!) -->
@@ -799,6 +812,22 @@
         </div>
     </section>
 </main>
+
+    <!-- Admin Management Modal -->
+    <div class="detail-view" id="admin-modal">
+        <div class="glass-panel detail-content interactive-card" style="max-width: 800px; padding: 30px;">
+            <button class="close-btn" onclick="fecharAdmin()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-users-gear" style="color: var(--neon-cyan);"></i>
+                    Controle de Usuários
+                </div>
+            </div>
+            <div class="operator-list" id="admin-user-list" style="margin-top: 20px;">
+                <!-- Lista de usuários será gerada pelo JS -->
+            </div>
+        </div>
+    </div>
     
     <!-- Detail Modal -->
     <div class="detail-view" id="detail-modal">
@@ -910,15 +939,40 @@
             liberarDashboard();
         }
 
-        // Desbloqueia e Carrega a Interface Correta
-        function liberarDashboard() {
+        // Desbloqueia e Carrega a Interface Correta com Personalização
+        async function liberarDashboard() {
             document.getElementById('auth-overlay').style.display = 'none';
             document.body.classList.add('dashboard-visible');
             
-            // Proteção Visual: Ocultar botão de importação para quem não é Admin
+            const btnUpload = document.getElementById('btn-upload-label');
+            const btnAdmin = document.getElementById('btn-admin');
+            const tituloMenu = document.getElementById('user-greeting');
+            const subTituloMenu = document.getElementById('user-subtitle');
+            
+            // Busca o nome do usuário no Banco para a saudação
+            const userSnap = await db.ref('usuarios/' + currentUser).once('value');
+            const userData = userSnap.val() || {};
+            const userName = userData.nome || 'Operador';
+
+            // Proteção Visual e Personalização
             if(!isAdmin) {
-                const btnUpload = document.querySelector('label[for="file-upload"]');
                 if(btnUpload) btnUpload.style.display = 'none';
+                if(btnAdmin) btnAdmin.style.display = 'none';
+                
+                // Redesign exclusivo para o Operador (Nome Gigante)
+                tituloMenu.innerText = `Olá, ${userName.split(' ')[0]}!`;
+                tituloMenu.style.fontSize = '4.5rem';
+                tituloMenu.style.color = 'var(--neon-cyan)';
+                subTituloMenu.innerText = "Bem-vindo ao seu painel exclusivo. Acompanhe seus resultados e histórico de sessões.";
+            } else {
+                if(btnUpload) btnUpload.style.display = 'flex';
+                if(btnAdmin) btnAdmin.style.display = 'flex';
+                
+                // Visão Clássica do Administrador
+                tituloMenu.innerText = "Analítico de Sessões";
+                tituloMenu.style.fontSize = '3.5rem';
+                tituloMenu.style.color = ''; // Reseta para a cor padrão
+                subTituloMenu.innerText = "Monitore o tempo de login, frequências e produtividade dos operadores em tempo real.";
             }
 
             carregarDadosDaNuvem();
@@ -1328,6 +1382,99 @@
                 });
             }
             document.getElementById('detail-modal').style.display = 'flex';
+        }
+
+        // --- FUNÇÕES DE USUÁRIO: Sair e Trocar Senha ---
+        function deslogar() {
+            currentUser = null;
+            isAdmin = false;
+            document.body.classList.remove('dashboard-visible');
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('login-box').style.display = 'flex';
+            document.getElementById('new-pass-box').style.display = 'none';
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+        }
+
+        function abrirTrocaSenhaGeral() {
+            document.body.classList.remove('dashboard-visible');
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('login-box').style.display = 'none';
+            document.getElementById('new-pass-box').style.display = 'flex';
+            // Atualiza o texto do modal para não parecer "Primeiro Acesso"
+            document.querySelector('#new-pass-box p').innerText = "Crie uma nova senha de segurança para a sua conta.";
+        }
+
+        // --- SISTEMA ADMINISTRATIVO: Gestão de Usuários ---
+        function fecharAdmin() {
+            document.getElementById('admin-modal').style.display = 'none';
+        }
+
+        async function abrirAdmin() {
+            document.getElementById('admin-modal').style.display = 'flex';
+            const list = document.getElementById('admin-user-list');
+            list.innerHTML = '<div style="text-align: center; color: var(--text-muted);"><div class="spinner" style="margin: 0 auto 10px;"></div>Carregando equipe...</div>';
+            
+            const snap = await db.ref('usuarios').once('value');
+            const usuarios = snap.val() || {};
+            list.innerHTML = '';
+            
+            for(const mat in usuarios) {
+                const u = usuarios[mat];
+                // Mostra se o usuário já trocou a senha padrão
+                const statusSenha = u.primeiroAcesso 
+                    ? '<span style="color:var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> Senha Padrão</span>' 
+                    : '<span style="color:var(--neon-cyan);"><i class="fa-solid fa-check"></i> Senha Alterada</span>';
+                
+                const role = u.admin ? '<span style="color:var(--neon-purple); font-weight:bold;">Admin (Supervisor)</span>' : 'Operador';
+                const nomeExibicao = u.nome || mat;
+
+                let actionButtons = '';
+                // Bloqueia a exclusão ou rebaixamento do master 'gestaosoft'
+                if(mat !== 'gestaosoft') {
+                    const btnPromoverTexto = u.admin ? 'Rebaixar' : 'Tornar Admin';
+                    const iconPromover = u.admin ? 'fa-arrow-down' : 'fa-arrow-up';
+                    
+                    actionButtons = `
+                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px;" onclick="toggleAdmin('${mat}', ${!u.admin})">
+                            <i class="fa-solid ${iconPromover}"></i> ${btnPromoverTexto}
+                        </button>
+                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="excluirUsuario('${mat}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    `;
+                }
+
+                list.innerHTML += `
+                    <div class="operator-item" style="cursor: default; margin-bottom: 10px;">
+                        <div class="op-info">
+                            <div class="op-avatar" style="font-size: 1rem; width: 40px; height: 40px;">${nomeExibicao.charAt(0).toUpperCase()}</div>
+                            <div class="op-details">
+                                <h4 style="margin-bottom: 2px;">${nomeExibicao} <span style="font-size:0.7rem; font-weight:normal; color:var(--text-muted);">(${mat})</span></h4>
+                                <p>Acesso: ${role} | Status: ${statusSenha}</p>
+                            </div>
+                        </div>
+                        <div class="op-stats" style="display:flex; gap:10px; align-items: center;">
+                            ${actionButtons}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function toggleAdmin(mat, darAdmin) {
+            const acao = darAdmin ? "conceder acesso de Supervisor para" : "remover o acesso de Supervisor de";
+            if(confirm(`Tem certeza que deseja ${acao} a matrícula ${mat}?`)) {
+                await db.ref('usuarios/' + mat).update({admin: darAdmin});
+                abrirAdmin(); // Recarrega a lista
+            }
+        }
+
+        async function excluirUsuario(mat) {
+            if(confirm(`⚠️ ATENÇÃO: Deseja realmente excluir o usuário da matrícula ${mat}? Esta ação não pode ser desfeita.`)) {
+                await db.ref('usuarios/' + mat).remove();
+                abrirAdmin(); // Recarrega a lista
+            }
         }
 
         // --- NOVA LÓGICA: Fechar o Modal ao clicar no X ---
