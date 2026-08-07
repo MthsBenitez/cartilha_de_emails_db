@@ -839,41 +839,46 @@
 
         // Core Data Processing
         // Core Data Processing
+        // Core Data Processing
         function processRawData(data) {
             // Clean and standardize columns
             rawData = data.map(row => {
-                // 1. Pega os valores brutos primeiro
+                // 1. Pega os valores brutos de data
                 let valInicio = row['Data_inicio'] || row['Data_inicio '];
                 let valFim = row['Data_fim'] || row['Data_fim '];
                 
-                // 2. Só instancia o moment se o valor existir de fato na planilha
                 let start = valInicio ? moment(valInicio) : null;
                 let end = valFim ? moment(valFim) : null;
                 
                 let durationSecs = 0;
                 
-                // 3. Tenta calcular diferença de início/fim apenas se as variáveis existirem E forem válidas
-                if(start && start.isValid() && end && end.isValid()) {
-                    durationSecs = end.diff(start, 'seconds');
-                } else {
-                    // Fallback inteligente para a coluna "Tempo" (ex: 06:20:09)
-                    let tempo = row['Tempo'] || row['tempo'] || row['TEMPO'];
-                    if (tempo) {
-                        if (typeof tempo === 'string') {
-                            let parts = tempo.split(':');
-                            if (parts.length === 3) {
-                                durationSecs = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2]);
-                            }
-                        } else if (tempo instanceof Date) {
-                            // Usamos métodos UTC para evitar que o fuso horário local distorça as horas lidas do Excel
-                            durationSecs = tempo.getUTCHours() * 3600 + tempo.getUTCMinutes() * 60 + tempo.getUTCSeconds();
-                        } else if (typeof tempo === 'number') {
-                            durationSecs = Math.round(tempo * 24 * 3600);
+                // 2. LÓGICA CORRIGIDA: Prioriza a coluna "Tempo" primeiro!
+                let tempo = row['Tempo'] || row['tempo'] || row['TEMPO'];
+                
+                if (tempo !== undefined && tempo !== null) {
+                    if (typeof tempo === 'string') {
+                        let parts = tempo.split(':');
+                        if (parts.length >= 2) { // Aceita formatos HH:mm ou HH:mm:ss
+                            let h = parseInt(parts[0]) || 0;
+                            let m = parseInt(parts[1]) || 0;
+                            let s = parseInt(parts[2]) || 0;
+                            durationSecs = (h * 3600) + (m * 60) + s;
                         }
+                    } else if (tempo instanceof Date) {
+                        // Usamos UTC para blindar contra o fuso horário de -3h do Brasil do SheetJS
+                        durationSecs = tempo.getUTCHours() * 3600 + tempo.getUTCMinutes() * 60 + tempo.getUTCSeconds();
+                    } else if (typeof tempo === 'number') {
+                        // Caso o SheetJS leia o tempo como fração decimal de 24h
+                        durationSecs = Math.round(tempo * 24 * 3600);
                     }
                 }
 
-                // Corrige leitura de data vazia
+                // 3. Fallback: Se a coluna tempo falhar ou der 0, tenta usar Data_inicio e Data_fim
+                if (durationSecs === 0 && start && start.isValid() && end && end.isValid()) {
+                    durationSecs = end.diff(start, 'seconds');
+                }
+
+                // Corrige leitura de data vazia (para agrupar no gráfico)
                 let dataFormatada = 'N/A';
                 let rowData = row['Data'] || row['Data '] || row['data'];
                 if (rowData) {
@@ -887,7 +892,6 @@
                     operacao: row['Operação'] || 'Deslogar',
                     nome: row['Nome'] || 'Desconhecido',
                     matricula: row['Matricula'] || '0000',
-                    // Valida corretamente o formata de data do momento
                     dataInicio: (start && start.isValid()) ? start.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
                     dataFim: (end && end.isValid()) ? end.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
                     duracaoSegundos: durationSecs > 0 ? durationSecs : 0
