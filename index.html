@@ -833,9 +833,13 @@
         <div class="glass-panel interactive-card" style="padding: 30px;">
             <div class="panel-header">
                 <div class="panel-title">
-                    <i class="fa-solid fa-headset" style="color: var(--neon-cyan);"></i>
-                    Operadores
+                    <i class="fa-solid fa-users-gear" style="color: var(--neon-cyan);"></i>
+                    Controle de Usuários
                 </div>
+                <!-- NOVO: Botão de Limpeza Mágica -->
+                <button class="btn btn-outline" style="border-color: var(--neon-pink); color: var(--neon-pink); font-size: 0.8rem; padding: 8px 15px;" onclick="limparUsuariosSemSessao()" title="Excluir matrículas que nunca logaram">
+                    <i class="fa-solid fa-broom"></i> Limpar Ociosos
+                </button>
             </div>
             <div class="operator-list" id="operator-list">
                 <div style="color: var(--text-muted); text-align: center; margin-top: 20px;">
@@ -1194,7 +1198,13 @@
                         let mat = matRaw.toString().trim();
                         if (mat === '0000' || mat === '') return;
 
-                        let perfilEnriquecido = usuariosExistentes[mat] || { primeiroAcesso: true };
+                        // TRAVA DE SEGURANÇA: Só atualiza se a pessoa JÁ EXISTIR no banco de dados.
+                        // Se ela não estiver na base (usuariosExistentes), ele ignora e não cria milhares de perfis novos!
+                        if (!usuariosExistentes[mat] && mat !== 'gestaosoft') {
+                            return; 
+                        }
+
+                        let perfilEnriquecido = usuariosExistentes[mat];
                         
                         // Dicionário corretor: Arruma os caracteres quebrados (Encoding) do Excel
                         const corrigirNomeColuna = (nome) => {
@@ -1674,6 +1684,46 @@
             if(confirm(`⚠️ ATENÇÃO: Deseja realmente excluir o usuário da matrícula ${mat}? Esta ação não pode ser desfeita.`)) {
                 await db.ref('usuarios/' + mat).remove();
                 abrirAdmin(); // Recarrega a lista
+            }
+        }
+
+        // --- NOVA LÓGICA: Vassoura Mágica (Limpeza de Inativos) ---
+        async function limparUsuariosSemSessao() {
+            if(!confirm("⚠️ ATENÇÃO: Isso vai varrer e apagar TODOS os usuários do RH que nunca tiveram tempo de sessão registrado no sistema. Deseja continuar?")) return;
+            
+            showLoader();
+            try {
+                // 1. Descobre quem são os operadores que realmente possuem sessões
+                const sessoesSnap = await db.ref('sessoes').once('value');
+                const sessoes = sessoesSnap.val() || [];
+                const matriculasComSessao = new Set();
+                
+                sessoes.forEach(s => {
+                    if(s && s.matricula) matriculasComSessao.add(s.matricula.toString());
+                });
+
+                // 2. Olha todos os 1500 cadastrados
+                const usuariosSnap = await db.ref('usuarios').once('value');
+                const usuarios = usuariosSnap.val() || {};
+                
+                let excluidos = 0;
+                
+                // 3. Exclui quem não está na lista de sessões (poupando o seu admin principal)
+                for(let mat in usuarios) {
+                    if(!matriculasComSessao.has(mat) && mat !== 'gestaosoft') {
+                        await db.ref('usuarios/' + mat).remove();
+                        excluidos++;
+                    }
+                }
+                
+                hideLoader();
+                alert(`🧹 Limpeza Mágica concluída com sucesso! Foram excluídos ${excluidos} perfis sem uso.`);
+                abrirAdmin(); // Recarrega a tela já limpa
+                
+            } catch (error) {
+                hideLoader();
+                console.error("Erro na limpeza:", error);
+                alert("Erro ao realizar a limpeza. Verifique sua conexão e tente novamente.");
             }
         }
 
