@@ -3,30 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call Center Analytics - Premium Dashboard</title>
-    <!-- Fontes do Google -->
+    <title>Nexus Analytics | Sessões</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome -->
+    
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Chart.js para renderizar os gráficos interativos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for XLSX parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Moment.js for date manipulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
     <style>
         :root {
-            /* Cores e Gradientes */
-            --bg-color: #050505;
-            --glass-bg: rgba(20, 20, 25, 0.4);
+            /* Color Palette */
+            --bg-base: #07070a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --glass-highlight: rgba(255, 255, 255, 0.15);
             
-            --accent-cyan: #00f2fe;
-            --accent-purple: #4facfe;
-            --accent-pink: #ff0844;
-            --text-main: #ffffff;
-            --text-muted: #a0a0b0;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #9d4edd;
+            --neon-pink: #f72585;
             
-            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --text-main: #f8f9fa;
+            --text-muted: #adb5bd;
+            
+            /* Typography */
+            --font-family: 'Plus Jakarta Sans', sans-serif;
+            
+            /* Spacing & Radii */
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-full: 9999px;
+            
+            /* Transitions */
+            --transition-smooth: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         * {
@@ -36,85 +53,83 @@
         }
 
         body {
-            font-family: var(--font-main);
-            background-color: var(--bg-color);
+            font-family: var(--font-family);
+            background-color: var(--bg-base);
             color: var(--text-main);
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            line-height: 1.6;
         }
 
-        /* Gradientes Orgânicos Desfocados de Fundo */
-        .ambient-light {
+        /* Ambient Glowing Backgrounds */
+        .ambient-orb {
             position: fixed;
             border-radius: 50%;
             filter: blur(120px);
             z-index: -1;
-            opacity: 0.5;
-            animation: float 20s infinite alternate ease-in-out;
+            opacity: 0.4;
+            animation: float 20s infinite alternate;
         }
         
-        .light-1 {
-            width: 400px;
-            height: 400px;
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
-            top: -100px;
-            left: -100px;
+        .orb-1 {
+            top: -10%; left: -10%;
+            width: 50vw; height: 50vw;
+            background: radial-gradient(circle, var(--neon-purple), transparent 70%);
         }
-
-        .light-2 {
-            width: 500px;
-            height: 500px;
-            background: linear-gradient(135deg, var(--accent-pink), #ffb199);
-            bottom: -200px;
-            right: -100px;
+        
+        .orb-2 {
+            bottom: -10%; right: -10%;
+            width: 40vw; height: 40vw;
+            background: radial-gradient(circle, var(--neon-cyan), transparent 70%);
             animation-delay: -5s;
         }
-
-        .light-3 {
-            width: 300px;
-            height: 300px;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            top: 40%;
-            left: 30%;
-            opacity: 0.3;
-            animation-duration: 25s;
+        
+        .orb-3 {
+            top: 40%; left: 40%;
+            width: 30vw; height: 30vw;
+            background: radial-gradient(circle, var(--neon-pink), transparent 70%);
+            opacity: 0.2;
+            animation-delay: -10s;
         }
 
         @keyframes float {
             0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(50px, 30px) scale(1.1); }
-            100% { transform: translate(-30px, 60px) scale(0.9); }
+            100% { transform: translate(5%, 5%) scale(1.1); }
         }
 
-        /* Utilidade: Glassmorphism */
+        /* Glassmorphism Utilities */
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Header Flutuante */
-        header {
+        /* Navbar */
+        nav {
             position: fixed;
-            top: 20px;
-            left: 50%;
+            top: 20px; left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            max-width: 1400px;
-            padding: 15px 30px;
+            width: 95%; max-width: 1400px;
+            height: 70px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 30px;
             z-index: 100;
-            border-radius: 100px;
+            border-radius: var(--radius-full);
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
         }
 
         .logo {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             font-weight: 800;
             letter-spacing: 1px;
             display: flex;
@@ -123,248 +138,454 @@
         }
 
         .logo i {
-            color: var(--accent-cyan);
+            background: linear-gradient(45deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             font-size: 1.5rem;
         }
 
-        nav ul {
-            list-style: none;
+        .nav-actions {
             display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: var(--radius-full);
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-highlight);
+        }
+
+        .btn-outline:hover {
+            background: var(--glass-highlight);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: all 0.5s ease;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 243, 255, 0.5);
+        }
+
+        /* File Input Hide */
+        #file-upload { display: none; }
+
+        /* Main Layout */
+        main {
+            padding: 120px 20px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
             gap: 30px;
         }
 
-        nav a {
-            color: var(--text-main);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: color 0.3s;
-        }
-
-        nav a:hover {
-            color: var(--accent-cyan);
-        }
-
-        .btn-glow {
-            background: linear-gradient(45deg, var(--accent-purple), var(--accent-cyan));
-            border: none;
-            padding: 10px 25px;
-            border-radius: 50px;
-            color: #fff;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .btn-glow:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 242, 254, 0.4);
-        }
-
-        /* Main Container */
-        main {
-            padding: 140px 5% 50px;
-            max-width: 1500px;
-            margin: 0 auto;
-        }
-
-        /* Hero Section */
+        /* Hero / Header Section */
         .hero {
             text-align: center;
-            margin-bottom: 60px;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            margin-bottom: 20px;
         }
 
         .hero h1 {
             font-size: 3.5rem;
             font-weight: 800;
-            margin-bottom: 15px;
-            background: linear-gradient(to right, #fff, #a0a0b0);
+            line-height: 1.2;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, var(--text-muted));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            line-height: 1.2;
         }
 
         .hero p {
             color: var(--text-muted);
             font-size: 1.1rem;
             max-width: 600px;
-            margin-bottom: 30px;
-            line-height: 1.6;
+            margin: 0 auto;
         }
 
-        /* Upload Area */
-        .upload-area {
-            border: 2px dashed rgba(255, 255, 255, 0.2);
-            padding: 30px 40px;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            max-width: 600px;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .upload-area:hover {
-            border-color: var(--accent-cyan);
-            background: rgba(0, 242, 254, 0.05);
-        }
-
-        .upload-area i {
-            font-size: 2.5rem;
-            color: var(--accent-cyan);
-            margin-bottom: 15px;
-        }
-        
-        .upload-filename {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 10px;
-            font-style: italic;
-        }
-
-        /* Dashboard Grid */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        /* Interactive Cards com Spotlight Effect */
-        .glass-card {
-            position: relative;
-            padding: 25px;
-            border-radius: 20px;
-            overflow: hidden;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            flex-direction: column;
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-        }
-
-        /* Efeito Spotlight no Hover (JS controla as variáveis --mouse-x/y) */
-        .glass-card::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(
-                600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                rgba(255, 255, 255, 0.08),
-                transparent 40%
-            );
-            z-index: 0;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-        }
-
-        .glass-card:hover::before {
-            opacity: 1;
-        }
-
-        .card-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .card-header {
+        /* Filters Section */
+        .filters-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            padding: 20px 30px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-glass {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .input-glass:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
         }
         
-        .card-icon {
-            width: 45px;
-            height: 45px;
+        .input-glass option {
+            background: var(--bg-base);
+            color: var(--text-main);
+        }
+
+        /* Interactive Grid (KPIs) */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        /* Card 3D & Mouse Tracking Effect */
+        .interactive-card {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            cursor: default;
+            transform-style: preserve-3d;
+        }
+
+        .interactive-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: radial-gradient(
+                800px circle at var(--mouse-x, 0) var(--mouse-y, 0), 
+                rgba(255, 255, 255, 0.4),
+                transparent 40%
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            transition: background 0.3s ease;
+        }
+
+        .interactive-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+        }
+
+        .kpi-icon {
+            width: 50px; height: 50px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--accent-cyan);
-            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
         }
 
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
+        .icon-cyan { color: var(--neon-cyan); box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.1); }
+        .icon-purple { color: var(--neon-purple); box-shadow: inset 0 0 15px rgba(157, 78, 221, 0.1); }
+        .icon-pink { color: var(--neon-pink); box-shadow: inset 0 0 15px rgba(247, 37, 133, 0.1); }
+
+        .kpi-title {
             color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .metric-value {
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin-bottom: 5px;
-            background: linear-gradient(to right, #fff, #e0e0e0);
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #fff, #aaa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .metric-formula {
-            font-size: 0.75rem;
-            color: var(--accent-purple);
-            font-family: monospace;
-            background: rgba(0,0,0,0.3);
-            padding: 5px 8px;
-            border-radius: 5px;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
-        .metric-desc {
+        .kpi-trend {
             font-size: 0.85rem;
-            color: var(--text-muted);
-            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
+        .trend-up { color: #00ff88; }
 
-        /* Seção de Análise Detalhada (Charts Placeholders) */
-        .analysis-grid {
+        /* Dashboard Main Area - Custom Charts */
+        .dashboard-content {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 25px;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .chart-card {
-            min-height: 280px;
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .chart-placeholder {
-            width: 100%;
-            height: 150px;
-            margin-top: 15px;
-            border-radius: 10px;
-            background: repeating-linear-gradient(
-                45deg,
-                rgba(255,255,255,0.02),
-                rgba(255,255,255,0.02) 10px,
-                rgba(255,255,255,0.05) 10px,
-                rgba(255,255,255,0.05) 20px
-            );
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Operator List Custom UI */
+        .operator-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        /* Custom Scrollbar */
+        .operator-list::-webkit-scrollbar { width: 6px; }
+        .operator-list::-webkit-scrollbar-track { background: transparent; }
+        .operator-list::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        .operator-list::-webkit-scrollbar-thumb:hover { background: var(--glass-highlight); }
+
+        .operator-item {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid transparent;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+        }
+
+        .operator-item:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--glass-highlight);
+            transform: translateX(5px);
+        }
+
+        .op-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .op-avatar {
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .op-details h4 { font-size: 1rem; margin-bottom: 2px; }
+        .op-details p { font-size: 0.8rem; color: var(--text-muted); }
+
+        .op-stats {
+            text-align: right;
+        }
+        
+        .op-stats .time { font-weight: 700; font-size: 1.1rem; color: var(--neon-cyan); }
+        .op-stats .logins { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Custom Bar Chart styling */
+        .chart-container {
+            width: 100%;
+            height: 350px;
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+            padding-top: 20px;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100%;
+            gap: 10px;
+            group: hover;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 40px;
+            background: linear-gradient(to top, var(--neon-purple), var(--neon-cyan));
+            border-radius: 6px 6px 0 0;
+            position: relative;
+            transition: height 1s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0.8;
+            cursor: pointer;
+        }
+        
+        .bar:hover {
+            opacity: 1;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+
+        .bar-label {
+            font-size: 0.75rem;
             color: var(--text-muted);
-            font-size: 0.9rem;
-            border: 1px dashed rgba(255,255,255,0.1);
+            text-align: center;
+            transform: rotate(-45deg);
+            white-space: nowrap;
+            margin-top: 10px;
+        }
+        
+        .bar-tooltip {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-base);
+            border: 1px solid var(--glass-border);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .bar:hover .bar-tooltip {
+            opacity: 1;
+        }
+
+        /* Operator Detail View (Modal style overlay) */
+        .detail-view {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .detail-content {
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 40px;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-btn:hover { color: var(--neon-pink); }
+        
+        .timeline {
+            margin-top: 30px;
+            border-left: 2px solid var(--glass-border);
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .timeline-item {
+            position: relative;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -27px;
+            top: 0;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        
+        .timeline-time {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+        
+        .timeline-content {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--glass-border);
+            padding: 15px;
+            border-radius: 8px;
         }
 
         /* Footer */
@@ -374,573 +595,517 @@
             color: var(--text-muted);
             font-size: 0.9rem;
             border-top: 1px solid var(--glass-border);
-            margin-top: 60px;
-            backdrop-filter: blur(10px);
+            margin-top: auto;
         }
 
-        /* Responsividade */
-        @media (max-width: 900px) {
-            .hero h1 { font-size: 2.5rem; }
-            nav ul { display: none; }
-            .analysis-grid { grid-template-columns: 1fr; }
+        /* Loading overlay */
+        .loader-overlay {
+            display: none;
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
         }
+        
+        .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--neon-cyan);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+
     </style>
 </head>
 <body>
 
-    <!-- Fundo animado -->
-    <div class="ambient-light light-1"></div>
-    <div class="ambient-light light-2"></div>
-    <div class="ambient-light light-3"></div>
+    <!-- Ambient Background -->
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
 
-    <!-- Header Flutuante -->
-    <header class="glass-panel">
+    <!-- Navigation -->
+    <nav>
         <div class="logo">
-            <i class="fa-solid fa-chart-line"></i>
-            NexusMetrics
+            <i class="fa-solid fa-chart-pie"></i>
+            Nexus
         </div>
-        <nav>
-            <ul>
-                <li><a href="#">Visão Geral</a></li>
-                <li><a href="#">Matriz de Eficácia</a></li>
-                <li><a href="#">Roteamento URA</a></li>
-                <li><a href="#">Detratores</a></li>
-            </ul>
-        </nav>
-        <button class="btn-glow">Exportar Relatório</button>
-    </header>
+        <div class="nav-actions">
+            <label for="file-upload" class="btn btn-primary">
+                <i class="fa-solid fa-file-excel"></i> Importar XLSX
+            </label>
+            <input type="file" id="file-upload" accept=".xlsx, .xls">
+            <button class="btn btn-outline" id="load-mock-btn">
+                <i class="fa-solid fa-database"></i> Usar Dados Demo
+            </button>
+        </div>
+    </nav>
 
+    <!-- Main Content -->
     <main>
-        <!-- Hero Section -->
-        <section class="hero glass-panel">
-            <h1>Inteligência Operacional <br> & Analytics de Eficiência</h1>
-            <p>Modelagem Matemática e Mapeamento de Schema para otimização de URA, tabulação e taxas de resolução de atendimento.</p>
-            
-            <div class="upload-area" id="uploadArea">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <h3>Importar Base de Dados</h3>
-                <p style="margin: 5px 0 0; font-size: 0.9rem;">Clique ou arraste o arquivo gerado pelo sistema.</p>
-                <div class="upload-filename">
-                    Aguardando: <strong>a_demanda_foi_solucionada__tabulacoes__2026-08-05T15_30_43.870577803-03_00.xlsx</strong>
-                </div>
-                <input type="file" id="fileInput" accept=".xlsx" style="display: none;">
+        <header class="hero">
+            <h1>Analítico de Sessões</h1>
+            <p>Monitore o tempo de login, frequências e produtividade dos operadores em tempo real com uma interface imersiva e responsiva.</p>
+        </header>
+
+        <!-- Filters -->
+        <section class="glass-panel filters-bar interactive-card">
+            <div class="filter-group">
+                <i class="fa-solid fa-filter" style="color: var(--neon-cyan);"></i>
+                <span style="font-weight: 600;">Filtros</span>
+            </div>
+            <div class="filter-group">
+                <select class="input-glass" id="filter-operador">
+                    <option value="all">Todos os Operadores</option>
+                </select>
+                <input type="date" class="input-glass" id="filter-date">
+                <button class="btn btn-outline" id="apply-filters" style="padding: 10px 15px;">Aplicar</button>
             </div>
         </section>
 
-        <!-- KPI Grid (Métricas Base) -->
-        <section class="dashboard-grid">
-            <!-- TRR -->
-            <div class="glass-card">
-                <div class="card-content">
-                    <div class="card-header">
-                        <span class="card-title">Resolução Relatada (TRR)</span>
-                        <div class="card-icon"><i class="fa-solid fa-check-double"></i></div>
-                    </div>
-                    <div class="metric-value">0.00%</div>
-                    <div class="metric-formula">TRR = (∑[Nota="Sim"] / N) * 100</div>
-                    <p class="metric-desc">Mede diretamente a percepção do cliente sobre a solução da demanda (Proxy de CSAT).</p>
+        <!-- KPIs Grid -->
+        <section class="kpi-grid">
+            <div class="glass-panel interactive-card">
+                <div class="kpi-icon icon-cyan">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Operadores Ativos</div>
+                    <div class="kpi-value" id="kpi-operadores">0</div>
+                    <div class="kpi-trend trend-up"><i class="fa-solid fa-arrow-trend-up"></i> Selecionado no período</div>
+                </div>
+            </div>
+            
+            <div class="glass-panel interactive-card">
+                <div class="kpi-icon icon-purple">
+                    <i class="fa-solid fa-stopwatch"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Tempo Médio (Dia)</div>
+                    <div class="kpi-value" id="kpi-media-tempo">0h 0m</div>
+                    <div class="kpi-trend trend-up"><i class="fa-solid fa-bolt"></i> Média por operador</div>
                 </div>
             </div>
 
-            <!-- TRC & FCR -->
-            <div class="glass-card">
-                <div class="card-content">
-                    <div class="card-header">
-                        <span class="card-title">Taxa de Rechamada (TRC)</span>
-                        <div class="card-icon" style="color: var(--accent-pink);"><i class="fa-solid fa-phone-slash"></i></div>
-                    </div>
-                    <div class="metric-value">0.00%</div>
-                    <div class="metric-formula">FCR = 1 - (Rechamadas em Δt / Total Único)</div>
-                    <p class="metric-desc">Volume de clientes que precisam insistir para resolver um problema. Saudável < 15%.</p>
+            <div class="glass-panel interactive-card">
+                <div class="kpi-icon icon-pink">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
                 </div>
-            </div>
-
-            <!-- Erlang (Intensidade) -->
-            <div class="glass-card">
-                <div class="card-content">
-                    <div class="card-header">
-                        <span class="card-title">Intensidade de Tráfego (λ)</span>
-                        <div class="card-icon" style="color: #ffb199;"><i class="fa-solid fa-wave-square"></i></div>
-                    </div>
-                    <div class="metric-value">0.0</div>
-                    <div class="metric-formula">λ = ∑ Chamadas(15min) / 15</div>
-                    <p class="metric-desc">Aproximação de ocupação baseada na densidade de chegada agrupada na coluna de Data.</p>
+                <div>
+                    <div class="kpi-title">Total de Logins</div>
+                    <div class="kpi-value" id="kpi-total-logins">0</div>
+                    <div class="kpi-trend"><i class="fa-solid fa-chart-line"></i> Sessões iniciadas</div>
                 </div>
             </div>
         </section>
 
-        <!-- Analysis Grid (Cruzamentos e Anomalias) -->
-        <!-- Analysis Grid (Cruzamentos e Anomalias) -->
-        <section class="analysis-grid">
-            
-            <!-- Estilos Dinâmicos Injetados (Segurança para não quebrar seu CSS original) -->
-            <style>
-                .btn-gravar {
-                    background: rgba(0, 242, 254, 0.05); border: 1px dashed rgba(0, 242, 254, 0.3); color: #00f2fe;
-                    padding: 12px 20px; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 600;
-                    transition: all 0.3s ease; width: 100%; margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 8px;
-                }
-                .btn-gravar:hover { background: rgba(0, 242, 254, 0.15); border-color: #00f2fe; }
-                .audio-item {
-                    display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03);
-                    padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--accent-cyan);
-                    transition: transform 0.2s;
-                }
-                .audio-item:hover { transform: translateX(5px); background: rgba(255,255,255,0.06); }
-                .link-audio { 
-                    background: linear-gradient(45deg, var(--accent-purple), var(--accent-cyan)); color: #fff; text-decoration: none; 
-                    padding: 6px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; gap: 5px; align-items: center;
-                }
-                .link-audio:hover { box-shadow: 0 0 10px rgba(0,242,254,0.4); }
-                .layout-duplo { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
-                .coluna-grafico { flex: 1; min-width: 300px; }
-                .coluna-bi { flex: 1.5; min-width: 320px; display: flex; flex-direction: column; gap: 12px; }
-                .card-expandido { grid-column: 1 / -1; }
-                .caixa-didatica { background: rgba(255,255,255,0.02); padding: 15px 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px; }
-            </style>
-
-            <!-- 1. Matriz de Eficácia -->
-            <div class="glass-card chart-card card-expandido">
-                <div class="card-content">
-                    <div class="card-header">
-                        <span class="card-title">Matriz de Eficácia Operacional</span>
-                        <div class="card-icon"><i class="fa-solid fa-network-wired"></i></div>
+        <!-- Dashboard Widgets -->
+        <section class="dashboard-content">
+            <!-- Left Chart Panel -->
+            <div class="glass-panel interactive-card" style="padding: 30px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-chart-column" style="color: var(--neon-purple);"></i>
+                        Tempo Total por Dia (Geral)
                     </div>
-                    
-                    <div class="caixa-didatica" style="border-left: 4px solid var(--accent-cyan);">
-                        <p style="font-size: 1rem; color: #fff; margin-bottom: 8px; font-weight: 600;">O que é isso? (Simples!)</p>
-                        <p class="metric-desc">Imagine um escorregador: As chamadas <strong>Ciano</strong> deslizam até o fim feliz (solução). As <strong>Azuis</strong> dão voltas, mas chegam sozinhas. As <strong>Vermelhas</strong> ficam presas e precisam de um adulto (atendente) para o resgate.</p>
-                    </div>
-
-                    <div class="layout-duplo">
-                        <div class="coluna-grafico">
-                            <div class="chart-placeholder" style="height: 250px;">
-                                <i class="fa-solid fa-chart-pie" style="font-size: 2rem; margin-bottom: 10px;"></i> Aguardando importação...
-                            </div>
-                        </div>
-                        <div class="coluna-bi">
-                            <h4 style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Visão Gerencial (B.I)</h4>
-                            <p class="metric-desc" style="margin-bottom: 10px;">Probabilidade Condicional: P(Falha | Tabulação). Mede o desperdício operacional por ineficiência do robô.</p>
-                            
-                            <!-- Botão Interativo de Gravações -->
-                            <button class="btn-gravar" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                                <i class="fa-solid fa-file-audio"></i> Acessar Gravações de Transbordo Falho (Vermelho)
-                            </button>
-                            <div style="display: none; margin-top: 10px; max-height: 260px; overflow-y: auto; padding-right: 10px; border-radius: 8px;">
-                                
-                                <!-- Atendimento 1 -->
-                                <div class="audio-item">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (11) 98765-4321</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Ref: Linha 42 | Motivo: Fatura | Duração: 04:12</span>
-                                    </div>
-                                    <a href="javascript:void(0)" class="link-audio" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Carregando...'; setTimeout(() => this.innerHTML='<i class=\'fa-solid fa-pause\'></i> 00:14 / 04:12', 1200)">
-                                        <i class="fa-solid fa-play"></i> Ouvir Chamada
-                                    </a>
-                                </div>
-                                
-                                <!-- Atendimento 2 -->
-                                <div class="audio-item">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (41) 99999-1111</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Ref: Linha 88 | Motivo: Cancelamento | Duração: 08:45</span>
-                                    </div>
-                                    <a href="javascript:void(0)" class="link-audio" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Carregando...'; setTimeout(() => this.innerHTML='<i class=\'fa-solid fa-pause\'></i> 00:03 / 08:45', 1200)">
-                                        <i class="fa-solid fa-play"></i> Ouvir Chamada
-                                    </a>
-                                </div>
-
-                                <!-- Atendimento 3 -->
-                                <div class="audio-item">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (21) 97777-3333</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Ref: Linha 105 | Motivo: Suporte Técnico | Duração: 12:30</span>
-                                    </div>
-                                    <a href="javascript:void(0)" class="link-audio" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Carregando...'; setTimeout(() => this.innerHTML='<i class=\'fa-solid fa-pause\'></i> 00:07 / 12:30', 1200)">
-                                        <i class="fa-solid fa-play"></i> Ouvir Chamada
-                                    </a>
-                                </div>
-
-                                <!-- Atendimento 4 -->
-                                <div class="audio-item">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (31) 96666-4444</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Ref: Linha 210 | Motivo: Reclamação Procon | Duração: 06:15</span>
-                                    </div>
-                                    <a href="javascript:void(0)" class="link-audio" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Carregando...'; setTimeout(() => this.innerHTML='<i class=\'fa-solid fa-pause\'></i> 00:02 / 06:15', 1200)">
-                                        <i class="fa-solid fa-play"></i> Ouvir Chamada
-                                    </a>
-                                </div>
-
-                                <!-- Atendimento 5 -->
-                                <div class="audio-item">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (51) 95555-5555</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Ref: Linha 302 | Motivo: Dúvida de Plano | Duração: 02:50</span>
-                                    </div>
-                                    <a href="javascript:void(0)" class="link-audio" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Carregando...'; setTimeout(() => this.innerHTML='<i class=\'fa-solid fa-pause\'></i> 00:01 / 02:50', 1200)">
-                                        <i class="fa-solid fa-play"></i> Ouvir Chamada
-                                    </a>
-                                </div>
-
-                            </div>
-                                    <a href="#" class="link-audio"><i class="fa-solid fa-play"></i> Ouvir Chamada</a>
-                                </div>
-                            </div>
-                        </div>
+                </div>
+                <div class="chart-container" id="main-chart">
+                    <!-- Bars injected by JS -->
+                    <div style="color: var(--text-muted); width: 100%; text-align: center; align-self: center;">
+                        Importe uma planilha XLSX ou use os Dados Demo para visualizar o gráfico.
                     </div>
                 </div>
             </div>
 
-            <!-- 2. Acurácia URA -->
-            <div class="glass-card chart-card card-expandido">
-                <div class="card-content">
-                    <div class="card-header">
-                        <span class="card-title">Alinhamento & Acurácia de URA</span>
-                        <div class="card-icon" style="color: var(--accent-purple);"><i class="fa-solid fa-route"></i></div>
+            <!-- Right Operator List -->
+            <div class="glass-panel interactive-card" style="padding: 30px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-headset" style="color: var(--neon-cyan);"></i>
+                        Operadores
                     </div>
-
-                    <div class="caixa-didatica" style="border-left: 4px solid var(--accent-purple);">
-                        <p style="font-size: 1rem; color: #fff; margin-bottom: 8px; font-weight: 600;">O que é isso? (Simples!)</p>
-                        <p class="metric-desc">Sabe quando você entra num labirinto e as placas apontam para o lado errado? Aqui vemos se a nossa "Placa" (Robô) mandou o cliente para a fila certa. Se ele queria 'Vendas' e caiu em 'Suporte', o robô errou o caminho.</p>
-                    </div>
-
-                    <div class="layout-duplo">
-                        <div class="coluna-grafico">
-                            <div class="chart-placeholder" style="height: 250px;">
-                                <i class="fa-solid fa-diagram-project" style="font-size: 2rem; margin-bottom: 10px;"></i> Aguardando importação...
-                            </div>
-                        </div>
-                        <div class="coluna-bi">
-                            <h4 style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Visão Gerencial (B.I)</h4>
-                            <p class="metric-desc" style="margin-bottom: 10px;">Falsos Positivos de Roteamento. Compara o caminho digitado na URA vs. Tabulação final do humano, precificando a perda de tempo.</p>
-                            
-                            <button class="btn-gravar" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                                <i class="fa-solid fa-file-audio"></i> Acessar Gravações (Desvios de URA)
-                            </button>
-                            <div style="display: none; margin-top: 10px;">
-                                <div class="audio-item" style="border-color: var(--accent-purple);">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (21) 97777-2222</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">URA: Vendas ➔ Humano: Suporte (Erro)</span>
-                                    </div>
-                                    <a href="#" class="link-audio"><i class="fa-solid fa-play"></i> Ouvir Chamada</a>
-                                </div>
-                            </div>
-                        </div>
+                </div>
+                <div class="operator-list" id="operator-list">
+                    <!-- Operator items injected by JS -->
+                    <div style="color: var(--text-muted); text-align: center; margin-top: 20px;">
+                        Aguardando dados...
                     </div>
                 </div>
             </div>
-
-            <!-- 3. Pareto 80/20 -->
-            <div class="glass-card chart-card card-expandido">
-                <div class="card-content">
-                    <div class="card-header">
-                        <span class="card-title">Análise de Pareto (Detratores)</span>
-                        <div class="card-icon" style="color: #ffb199;"><i class="fa-solid fa-chart-column"></i></div>
-                    </div>
-
-                    <div class="caixa-didatica" style="border-left: 4px solid #ffb199;">
-                        <p style="font-size: 1rem; color: #fff; margin-bottom: 8px; font-weight: 600;">O que é isso? (Simples!)</p>
-                        <p class="metric-desc">Regra do 80/20! Imagine que na sua casa tem 10 tarefas para fazer, mas 2 delas (lavar louça e limpar o chão) dão 80% do cansaço. Aqui mostramos quais são os 2 probleminhas da empresa que geram 80% das reclamações.</p>
-                    </div>
-
-                    <div class="layout-duplo">
-                        <div class="coluna-grafico">
-                            <div class="chart-placeholder" style="height: 250px;">
-                                <i class="fa-solid fa-chart-bar" style="font-size: 2rem; margin-bottom: 10px;"></i> Aguardando importação...
-                            </div>
-                        </div>
-                        <div class="coluna-bi">
-                            <h4 style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Visão Gerencial (B.I)</h4>
-                            <p class="metric-desc" style="margin-bottom: 10px;">Curva ABC baseada em Frequência Acumulada. Foca os esforços da diretoria nos ofensores sistêmicos de maior peso.</p>
-                            
-                            <button class="btn-gravar" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                                <i class="fa-solid fa-file-audio"></i> Acessar Gravações (Ofensores Top 1 e 2)
-                            </button>
-                            <div style="display: none; margin-top: 10px;">
-                                <div class="audio-item" style="border-color: #ffb199;">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (31) 96666-5555</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Ofensor Top 1: Lentidão no Sistema | Linha 12</span>
-                                    </div>
-                                    <a href="#" class="link-audio"><i class="fa-solid fa-play"></i> Ouvir Chamada</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. Outliers (Z-Score) -->
-            <div class="glass-card chart-card card-expandido">
-                <div class="card-content">
-                    <div class="card-header">
-                        <span class="card-title">Anomalias de Reincidência (Z-Score)</span>
-                        <div class="card-icon" style="color: var(--accent-pink);"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    </div>
-
-                    <div class="caixa-didatica" style="border-left: 4px solid var(--accent-pink);">
-                        <p style="font-size: 1rem; color: #fff; margin-bottom: 8px; font-weight: 600;">O que é isso? (Simples!)</p>
-                        <p class="metric-desc">É o nosso "Radar de Clientes Furiosos". Se um cliente normal liga 1 vez ao mês, mas tem alguém que já ligou 5 vezes só hoje, nosso alarme dispara! Mostramos aqui quem está quase cancelando o serviço.</p>
-                    </div>
-
-                    <div class="layout-duplo">
-                        <div class="coluna-grafico">
-                            <div class="chart-placeholder" style="height: 250px;">
-                                <i class="fa-solid fa-bolt" style="font-size: 2rem; margin-bottom: 10px;"></i> Aguardando importação...
-                            </div>
-                        </div>
-                        <div class="coluna-bi">
-                            <h4 style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Visão Gerencial (B.I)</h4>
-                            <p class="metric-desc" style="margin-bottom: 10px;">Cálculo de Desvio Padrão (Z > 3). Alerta preventivo automático contra churn (cancelamentos) e riscos de ações judiciais de pequenas causas.</p>
-                            
-                            <button class="btn-gravar" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                                <i class="fa-solid fa-file-audio"></i> Acessar Gravações (Risco de Churn)
-                            </button>
-                            <div style="display: none; margin-top: 10px;">
-                                <div class="audio-item" style="border-color: var(--accent-pink);">
-                                    <div>
-                                        <span style="font-size: 0.9rem; color: #fff; display: block; font-weight: 600;">📞 (19) 95555-4444</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-muted);">ALERTA CRÍTICO: 6ª ligação no mesmo dia | Ref: Linha 150</span>
-                                    </div>
-                                    <a href="#" class="link-audio" style="background: var(--accent-pink);"><i class="fa-solid fa-play"></i> Ouvir Chamada</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </section>
     </main>
+    
+    <!-- Detail Modal -->
+    <div class="detail-view" id="detail-modal">
+        <div class="glass-panel detail-content interactive-card">
+            <button class="close-btn" id="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            <div class="op-info" style="margin-bottom: 20px;">
+                <div class="op-avatar" id="modal-avatar" style="width: 60px; height: 60px; font-size: 1.5rem;">A</div>
+                <div>
+                    <h2 id="modal-name">Nome do Operador</h2>
+                    <p style="color: var(--text-muted);">Matrícula: <span id="modal-matricula">0000</span> | Média Diária: <span id="modal-media-tempo">0h</span></p>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                Registro de Sessões
+            </h3>
+            
+            <div class="timeline" id="modal-timeline">
+                <!-- Timeline items injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader">
+        <div class="spinner"></div>
+        <div style="font-weight: 600; font-size: 1.1rem; letter-spacing: 2px;">PROCESSANDO DADOS...</div>
+    </div>
 
     <footer>
-        <p>&copy; 2026 NexusMetrics Analytics. Modelagem Funcional de URA e Atendimento.</p>
+        <p>&copy; 2026 Nexus Analytics. Design Premium. Todos os direitos reservados.</p>
     </footer>
 
-    <!-- Scripts de Interação UI/UX -->
     <script>
-        // Efeito Spotlight (Mouse Tracking)
-        document.addEventListener('mousemove', (e) => {
-            const cards = document.querySelectorAll('.glass-card');
+        // Global State
+        let rawData = [];
+        let filteredData = [];
+        
+        // DOM Elements
+        const fileUpload = document.getElementById('file-upload');
+        const loader = document.getElementById('loader');
+        const loadMockBtn = document.getElementById('load-mock-btn');
+        const filterDate = document.getElementById('filter-date');
+        const filterOperador = document.getElementById('filter-operador');
+        const applyFiltersBtn = document.getElementById('apply-filters');
+        
+        // Mouse Tracking Effect for Glass Cards
+        const handleMouseMove = (e) => {
+            const cards = document.querySelectorAll('.interactive-card');
             cards.forEach(card => {
                 const rect = card.getBoundingClientRect();
-                // Calcula a posição do mouse relativa ao card
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                
-                // Define variáveis CSS dinâmicas para o centro do brilho
                 card.style.setProperty('--mouse-x', `${x}px`);
                 card.style.setProperty('--mouse-y', `${y}px`);
             });
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+
+        // Parse Excel File
+        fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            showLoader();
+            const reader = new FileReader();
+            
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                
+                // Assumption: Data is in the first sheet
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // Convert to JSON
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                processRawData(json);
+                hideLoader();
+            };
+            
+            reader.readAsArrayBuffer(file);
         });
 
-        // Interação de Upload (Simulação)
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-
-        uploadArea.addEventListener('click', () => {
-            fileInput.click();
+        // Load Mock Data
+        loadMockBtn.addEventListener('click', () => {
+            showLoader();
+            setTimeout(() => {
+                const mock = generateMockData();
+                processRawData(mock);
+                hideLoader();
+            }, 800);
         });
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                const fileName = e.target.files[0].name;
-                const uploadText = uploadArea.querySelector('.upload-filename');
+        function showLoader() { loader.style.display = 'flex'; }
+        function hideLoader() { loader.style.display = 'none'; }
+
+        // Core Data Processing
+        function processRawData(data) {
+            // Clean and standardize columns: Data, Operação, Nome, Matricula, Tempo, Data_inicio, Data_fim
+            rawData = data.map(row => {
+                // Handle different date formats or text
+                let start = moment(row['Data_inicio'] || row['Data_inicio ']);
+                let end = moment(row['Data_fim'] || row['Data_fim ']);
                 
-                // Animação visual de sucesso (mock)
-                uploadArea.style.borderColor = '#00f2fe';
-                uploadArea.style.background = 'rgba(0, 242, 254, 0.1)';
-                uploadArea.querySelector('i').className = 'fa-solid fa-check-circle';
-                uploadArea.querySelector('h3').innerText = 'Arquivo Carregado';
-                uploadText.innerHTML = `Lido com sucesso: <strong>${fileName}</strong> <br><small>Processando schema de dados...</small>`;
-                
-                // Simula preenchimento dos dados do Dashboard com Gráficos Reais (Chart.js)
-                setTimeout(() => {
-                    // Atualiza as métricas principais
-                    document.querySelectorAll('.metric-value')[0].innerText = '73.4%';
-                    document.querySelectorAll('.metric-value')[1].innerText = '12.8%';
-                    document.querySelectorAll('.metric-value')[2].innerText = '4.2';
-                    
-                    const placeholders = document.querySelectorAll('.chart-placeholder');
-                    
-                    // Configuração de estilo global dos gráficos para combinar com o tema escuro
-                    Chart.defaults.color = '#a0a0b0';
-                    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
-                    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+                let durationSecs = 0;
+                if(start.isValid() && end.isValid()) {
+                    durationSecs = end.diff(start, 'seconds');
+                } else {
+                    // Try parsing tempo if start/end fail
+                    let tempo = row['Tempo'];
+                    if(typeof tempo === 'string') {
+                        let parts = tempo.split(':');
+                        if(parts.length === 3) durationSecs = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2]);
+                    }
+                }
 
-                    // 1. Matriz de Eficácia (Gráfico de Rosca) - VERSÃO ENRIQUECIDA E DINÂMICA
-                    placeholders[0].style.background = 'transparent';
-                    placeholders[0].style.border = 'none';
-                    placeholders[0].innerHTML = '<canvas id="chartEficacia" style="max-height: 180px; width: 100%;"></canvas>';
-                    
-                    // VARIÁVEIS MUTÁVEIS: Preparado para receber dados reais de planilhas dinamicamente
-                    const efic_sucesso = 65;
-                    const efic_retencao = 20;
-                    const efic_falha = 15;
-                    
-                    // O sistema calcula o total automaticamente
-                    const totalRegistros = efic_sucesso + efic_retencao + efic_falha;
-
-                    new Chart(document.getElementById('chartEficacia'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Sucesso', 'Retenção Útil', 'Transbordo Falho'],
-                            datasets: [{
-                                data: [efic_sucesso, efic_retencao, efic_falha],
-                                backgroundColor: ['#00f2fe', '#4facfe', '#ff0844'],
-                                borderWidth: 4, // Cria o espaçamento elegante entre as fatias
-                                borderColor: '#050505', // Usa a cor de fundo para simular o "vazado"
-                                hoverOffset: 8 // Efeito tátil ao passar o mouse
-                            }]
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false,
-                            cutout: '75%', // Afina o anel para um visual mais moderno
-                            layout: {
-                                padding: { top: 10, bottom: 10 }
-                            },
-                            plugins: { 
-                                legend: { 
-                                    position: 'right',
-                                    labels: {
-                                        color: '#a0a0b0',
-                                        usePointStyle: true,
-                                        pointStyle: 'rectRounded',
-                                        padding: 20,
-                                        font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 }
-                                    }
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(20, 20, 25, 0.95)',
-                                    titleColor: '#00f2fe',
-                                    bodyColor: '#ffffff',
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                    borderWidth: 1,
-                                    padding: 15,
-                                    usePointStyle: true,
-                                    callbacks: {
-                                        // Calcula e exibe a porcentagem real no hover
-                                        label: function(context) {
-                                            let valor = context.raw;
-                                            let porcentagem = ((valor / totalRegistros) * 100).toFixed(1) + '%';
-                                            return ` Volume: ${valor} registros (${porcentagem})`;
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        // Plugin Exclusivo: Renderiza o Total no centro da rosca
-                        plugins: [{
-                            id: 'textoCentral',
-                            beforeDraw: function(chart) {
-                                var width = chart.width, height = chart.height, ctx = chart.ctx;
-                                ctx.restore();
-                                
-                                var fontSize = (height / 110).toFixed(2);
-                                ctx.font = "800 " + fontSize + "em 'Plus Jakarta Sans'";
-                                ctx.textBaseline = "middle";
-                                ctx.fillStyle = "#ffffff";
-                                
-                                var text = totalRegistros.toString();
-                                // chartArea garante que o texto fique no centro do círculo, ignorando a legenda
-                                var centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
-                                var centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
-                                
-                                var textX = centerX - (ctx.measureText(text).width / 2);
-                                ctx.fillText(text, textX, centerY - 8);
-                                
-                                ctx.font = "500 " + (fontSize * 0.35) + "em 'Plus Jakarta Sans'";
-                                ctx.fillStyle = "#a0a0b0";
-                                var subText = "Registros";
-                                var subTextX = centerX - (ctx.measureText(subText).width / 2);
-                                ctx.fillText(subText, subTextX, centerY + 18);
-                                ctx.save();
-                            }
-                        }]
-                    });
-
-                    // 2. Alinhamento URA (Gráfico de Barras)
-                    placeholders[1].style.background = 'transparent';
-                    placeholders[1].style.border = 'none';
-                    placeholders[1].innerHTML = '<canvas id="chartUra" style="max-height: 160px; width: 100%;"></canvas>';
-                    new Chart(document.getElementById('chartUra'), {
-                        type: 'bar',
-                        data: {
-                            labels: ['Vendas', 'Suporte', 'Faturas', 'Outros'],
-                            datasets: [{
-                                label: 'Acurácia (%)',
-                                data: [88, 52, 94, 31],
-                                backgroundColor: '#4facfe',
-                                borderRadius: 6
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                    });
-
-                    // 3. Pareto 80/20 (Gráfico Misto: Barras + Linha)
-                    placeholders[2].style.background = 'transparent';
-                    placeholders[2].style.border = 'none';
-                    placeholders[2].innerHTML = '<canvas id="chartPareto" style="max-height: 160px; width: 100%;"></canvas>';
-                    new Chart(document.getElementById('chartPareto'), {
-                        type: 'bar',
-                        data: {
-                            labels: ['Lentidão', 'Senha', 'Fatura', 'Outros'],
-                            datasets: [
-                                { label: 'Volume de Chamados', data: [450, 200, 100, 50], backgroundColor: '#ffb199', borderRadius: 4, order: 2 },
-                                { label: 'Acumulado %', data: [56, 81, 93, 100], type: 'line', borderColor: '#ff0844', tension: 0.3, order: 1 }
-                            ]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-
-                    // 4. Anomalias Z-Score (Gráfico de Linha com Preenchimento Neon)
-                    placeholders[3].style.background = 'transparent';
-                    placeholders[3].style.border = 'none';
-                    placeholders[3].innerHTML = '<canvas id="chartZscore" style="max-height: 160px; width: 100%;"></canvas>';
-                    new Chart(document.getElementById('chartZscore'), {
-                        type: 'line',
-                        data: {
-                            labels: ['10h', '11h', '12h', '13h', '14h', '15h'],
-                            datasets: [{
-                                label: 'Desvios Críticos (Z)',
-                                data: [0.2, 0.5, 3.8, 1.1, 0.4, 0.1],
-                                borderColor: '#ff0844',
-                                backgroundColor: 'rgba(255, 8, 68, 0.15)',
-                                fill: true,
-                                tension: 0.4,
-                                pointBackgroundColor: '#00f2fe',
-                                pointRadius: 4
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-
-                }, 1500);
-            }
-        });
-
-        // Efeito Tilt 3D sutil (opcional) nas chart-cards
-        const chartCards = document.querySelectorAll('.chart-card');
-        chartCards.forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = ((y - centerY) / centerY) * -3; // Max 3 deg
-                const rotateY = ((x - centerX) / centerX) * 3;
-                
-                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+                return {
+                    data: moment(row['Data']).format('YYYY-MM-DD') || start.format('YYYY-MM-DD'),
+                    operacao: row['Operação'] || 'Deslogar',
+                    nome: row['Nome'] || 'Desconhecido',
+                    matricula: row['Matricula'] || '0000',
+                    dataInicio: start.isValid() ? start.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    dataFim: end.isValid() ? end.format('YYYY-MM-DD HH:mm:ss') : 'N/A',
+                    duracaoSegundos: durationSecs > 0 ? durationSecs : 0
+                };
             });
             
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+            populateFilters();
+            applyFilters(); // Initial render with all data
+        }
+
+        function populateFilters() {
+            const operadores = [...new Set(rawData.map(d => d.nome))].sort();
+            filterOperador.innerHTML = '<option value="all">Todos os Operadores</option>';
+            operadores.forEach(op => {
+                filterOperador.innerHTML += `<option value="${op}">${op}</option>`;
             });
-        });
+        }
+
+        applyFiltersBtn.addEventListener('click', applyFilters);
+
+        function applyFilters() {
+            const selectedDate = filterDate.value;
+            const selectedOp = filterOperador.value;
+
+            filteredData = rawData.filter(d => {
+                let matchDate = selectedDate ? d.data === selectedDate : true;
+                let matchOp = selectedOp === 'all' ? true : d.nome === selectedOp;
+                return matchDate && matchOp;
+            });
+
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            // Calculate KPIs
+            const uniqueOperators = [...new Set(filteredData.map(d => d.nome))];
+            const totalLogins = filteredData.length;
+            
+            const totalTimeSecs = filteredData.reduce((acc, curr) => acc + curr.duracaoSegundos, 0);
+            
+            let avgTimeSecs = 0;
+            // Calculate daily average per operator
+            if (uniqueOperators.length > 0) {
+                const uniqueDays = [...new Set(filteredData.map(d => d.data))].length || 1;
+                avgTimeSecs = totalTimeSecs / (uniqueOperators.length * uniqueDays);
+            }
+
+            // Update UI KPIs
+            document.getElementById('kpi-operadores').innerText = uniqueOperators.length;
+            document.getElementById('kpi-total-logins').innerText = totalLogins;
+            document.getElementById('kpi-media-tempo').innerText = formatDuration(avgTimeSecs);
+
+            // Update Chart (Total time per day)
+            renderMainChart();
+
+            // Update Operator List
+            renderOperatorList();
+        }
+
+        function renderMainChart() {
+            const chartContainer = document.getElementById('main-chart');
+            chartContainer.innerHTML = '';
+            
+            if (filteredData.length === 0) {
+                chartContainer.innerHTML = '<div style="color: var(--text-muted); width:100%; text-align:center; align-self:center;">Nenhum dado para o filtro selecionado.</div>';
+                return;
+            }
+
+            // Group by date
+            const dailyData = {};
+            filteredData.forEach(d => {
+                if(!dailyData[d.data]) dailyData[d.data] = 0;
+                dailyData[d.data] += d.duracaoSegundos;
+            });
+
+            const sortedDates = Object.keys(dailyData).sort();
+            
+            // Need a max value for height scaling
+            const maxVal = Math.max(...Object.values(dailyData));
+
+            sortedDates.forEach(date => {
+                const secs = dailyData[date];
+                const heightPercent = maxVal === 0 ? 0 : (secs / maxVal) * 100;
+                
+                const group = document.createElement('div');
+                group.className = 'bar-group';
+                
+                const displayDate = moment(date).format('DD/MM');
+                const formattedTime = formatDuration(secs);
+                
+                group.innerHTML = `
+                    <div class="bar" style="height: ${heightPercent}%">
+                        <div class="bar-tooltip">${displayDate}<br><b>${formattedTime}</b></div>
+                    </div>
+                    <div class="bar-label">${displayDate}</div>
+                `;
+                chartContainer.appendChild(group);
+            });
+        }
+
+        function renderOperatorList() {
+            const listContainer = document.getElementById('operator-list');
+            listContainer.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                listContainer.innerHTML = '<div style="color: var(--text-muted); text-align:center;">Nenhum operador encontrado.</div>';
+                return;
+            }
+
+            // Group by operator
+            const opData = {};
+            filteredData.forEach(d => {
+                if(!opData[d.nome]) {
+                    opData[d.nome] = { nome: d.nome, matricula: d.matricula, tempoTotal: 0, logins: 0 };
+                }
+                opData[d.nome].tempoTotal += d.duracaoSegundos;
+                opData[d.nome].logins += 1;
+            });
+
+            // Sort by total time descending
+            const sortedOps = Object.values(opData).sort((a,b) => b.tempoTotal - a.tempoTotal);
+
+            sortedOps.forEach(op => {
+                const initial = op.nome.charAt(0).toUpperCase();
+                const item = document.createElement('div');
+                item.className = 'operator-item';
+                item.onclick = () => openOperatorModal(op.nome);
+                
+                item.innerHTML = `
+                    <div class="op-info">
+                        <div class="op-avatar">${initial}</div>
+                        <div class="op-details">
+                            <h4>${op.nome}</h4>
+                            <p>Mat: ${op.matricula}</p>
+                        </div>
+                    </div>
+                    <div class="op-stats">
+                        <div class="time">${formatDuration(op.tempoTotal)}</div>
+                        <div class="logins">${op.logins} sessões</div>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        // Modal Logic
+        const modal = document.getElementById('detail-modal');
+        const closeModal = document.getElementById('close-modal');
+
+        closeModal.onclick = () => { modal.style.display = 'none'; };
+        window.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
+
+        function openOperatorModal(nome) {
+            const opSessions = rawData.filter(d => d.nome === nome).sort((a,b) => moment(b.dataInicio).diff(moment(a.dataInicio)));
+            
+            if(opSessions.length === 0) return;
+            
+            const baseInfo = opSessions[0];
+            const totalTime = opSessions.reduce((acc, curr) => acc + curr.duracaoSegundos, 0);
+            const uniqueDays = [...new Set(opSessions.map(d => d.data))].length || 1;
+            const avgDaily = totalTime / uniqueDays;
+
+            document.getElementById('modal-avatar').innerText = nome.charAt(0).toUpperCase();
+            document.getElementById('modal-name').innerText = nome;
+            document.getElementById('modal-matricula').innerText = baseInfo.matricula;
+            document.getElementById('modal-media-tempo').innerText = formatDuration(avgDaily);
+
+            const timeline = document.getElementById('modal-timeline');
+            timeline.innerHTML = '';
+
+            opSessions.forEach(session => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                
+                const dataFormatada = moment(session.dataInicio).format('DD/MM/YYYY HH:mm');
+                const fimFormatado = session.dataFim !== 'N/A' ? moment(session.dataFim).format('HH:mm') : '...';
+                
+                item.innerHTML = `
+                    <div class="timeline-time">${dataFormatada} - ${fimFormatado} (${formatDuration(session.duracaoSegundos)})</div>
+                    <div class="timeline-content">
+                        <strong>${session.operacao}</strong>
+                    </div>
+                `;
+                timeline.appendChild(item);
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        // Utilities
+        function formatDuration(totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            if(h > 0) return `${h}h ${m}m`;
+            return `${m}m`;
+        }
+
+        // Mock Data Generator for Demonstration
+        function generateMockData() {
+            const data = [];
+            const operators = [
+                {n: 'Ana Souza', m: '1001'}, {n: 'Carlos Silva', m: '1002'},
+                {n: 'Beatriz Lima', m: '1003'}, {n: 'Fernando Costa', m: '1004'}
+            ];
+            
+            let currentDate = moment().subtract(7, 'days');
+            
+            for(let i=0; i<7; i++) {
+                const dayString = currentDate.format('YYYY-MM-DD');
+                
+                operators.forEach(op => {
+                    // Random 1 to 4 sessions per day per operator
+                    const numSessions = Math.floor(Math.random() * 4) + 1;
+                    
+                    let baseHour = 8; // start at 8 AM
+                    
+                    for(let s=0; s<numSessions; s++) {
+                        const startMin = Math.floor(Math.random() * 60);
+                        const durationMins = Math.floor(Math.random() * 120) + 30; // 30 to 150 mins
+                        
+                        const start = moment(dayString).add(baseHour, 'hours').add(startMin, 'minutes');
+                        const end = moment(start).add(durationMins, 'minutes');
+                        
+                        data.push({
+                            'Data': dayString,
+                            'Operação': 'Login / Logout',
+                            'Nome': op.n,
+                            'Matricula': op.m,
+                            'Tempo': `${Math.floor(durationMins/60).toString().padStart(2,'0')}:${(durationMins%60).toString().padStart(2,'0')}:00`,
+                            'Data_inicio': start.format('YYYY-MM-DD HH:mm:ss'),
+                            'Data_fim': end.format('YYYY-MM-DD HH:mm:ss')
+                        });
+                        
+                        baseHour += (durationMins/60) + 1; // offset next session
+                        if(baseHour > 18) break;
+                    }
+                });
+                
+                currentDate.add(1, 'days');
+            }
+            return data;
+        }
     </script>
 </body>
 </html>
+dashboard_sessoes.html
+Exibindo dashboard_sessoes.html.
