@@ -691,8 +691,8 @@
             <h2 style="margin-bottom: 15px; font-weight: 700;">Acesso Restrito</h2>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Insira sua matrícula ou credencial de gestão.</p>
             
-            <input type="text" id="login-user" class="input-glass" placeholder="Matrícula ou 'gestaosoft'">
-            <input type="password" id="login-pass" class="input-glass" placeholder="Senha">
+            <input type="text" id="login-user" class="input-glass" placeholder="Matrícula ou 'gestaosoft'" onkeypress="if(event.key === 'Enter') fazerLogin()">
+            <input type="password" id="login-pass" class="input-glass" placeholder="Senha" onkeypress="if(event.key === 'Enter') fazerLogin()">
             
             <button class="btn btn-primary" style="justify-content: center; margin-top: 10px; padding: 12px;" onclick="fazerLogin()">
                 <i class="fa-solid fa-right-to-bracket"></i> Acessar Sistema
@@ -705,12 +705,11 @@
             <!-- NOVO: Botão Fechar "X" (Invisível no primeiro login) -->
             <button id="close-pass-btn" class="close-btn" style="display: none; top: 15px; right: 15px;" onclick="fecharTrocaSenhaGeral()"><i class="fa-solid fa-xmark"></i></button>
             
-            <h2 style="color: var(--neon-cyan); font-weight: 700;">Bem-vindo!</h2>
-            <h2 style="color: var(--neon-cyan); font-weight: 700;">Bem-vindo!</h2>
+            <h2 style="color: var(--neon-cyan); font-weight: 700;">Troca de Senha</h2>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Por normas de segurança, é obrigatório alterar sua senha no primeiro acesso.</p>
             
-            <input type="password" id="new-pass-1" class="input-glass" placeholder="Digite a Nova Senha">
-            <input type="password" id="new-pass-2" class="input-glass" placeholder="Confirme a Nova Senha">
+            <input type="password" id="new-pass-1" class="input-glass" placeholder="Digite a Nova Senha" onkeypress="if(event.key === 'Enter') salvarNovaSenha()">
+            <input type="password" id="new-pass-2" class="input-glass" placeholder="Confirme a Nova Senha" onkeypress="if(event.key === 'Enter') salvarNovaSenha()">
             
             <button class="btn btn-primary" style="justify-content: center; margin-top: 10px; padding: 12px;" onclick="salvarNovaSenha()">
                 <i class="fa-solid fa-shield-halved"></i> Salvar e Entrar
@@ -1648,6 +1647,56 @@
         // --- SISTEMA DE IMPORTAÇÃO (POPUP) ---
         function abrirImportacao() { document.getElementById('import-modal').style.display = 'flex'; }
         function fecharImportacao() { document.getElementById('import-modal').style.display = 'none'; }
+
+        // --- SISTEMA ADMINISTRATIVO: Gestão de Usuários ---
+        async function abrirAdmin() {
+            document.getElementById('admin-modal').style.display = 'flex';
+            const adminList = document.getElementById('admin-user-list');
+            adminList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding: 20px;">Carregando usuários...</div>';
+            
+            try {
+                const snap = await db.ref('usuarios').once('value');
+                const usuarios = snap.val() || {};
+                
+                adminList.innerHTML = '';
+                
+                for(let mat in usuarios) {
+                    if(mat === 'gestaosoft') continue; // Oculta o super admin do sistema
+                    
+                    const u = usuarios[mat];
+                    const isAdminBadge = u.admin ? '<span style="color: var(--neon-cyan); font-size: 0.75rem; margin-left: 10px;"><i class="fa-solid fa-shield-halved"></i> Gestor</span>' : '';
+                    
+                    adminList.innerHTML += `
+                        <div class="operator-item">
+                            <div class="op-info">
+                                <div class="op-avatar" style="width: 40px; height: 40px; font-size: 1rem; cursor: pointer;" onclick="abrirPerfil('${mat}')" title="Ver Dossiê do RH">
+                                    ${(u.nome || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="op-details">
+                                    <h4 style="display: flex; align-items: center; margin-bottom: 0;">${u.nome || 'Sem Nome'} ${isAdminBadge}</h4>
+                                    <p style="margin-top: 2px;">Mat: ${mat}</p>
+                                </div>
+                            </div>
+                            <div class="op-stats" style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.75rem;" onclick="toggleAdmin('${mat}', ${!u.admin})">
+                                    ${u.admin ? 'Remover Gestão' : 'Dar Gestão'}
+                                </button>
+                                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.75rem; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="excluirUsuario('${mat}')">
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (adminList.innerHTML === '') {
+                    adminList.innerHTML = '<div style="text-align:center; color:var(--text-muted);">Nenhum usuário encontrado.</div>';
+                }
+            } catch (error) {
+                adminList.innerHTML = '<div style="text-align:center; color:var(--neon-pink);">Erro ao carregar usuários.</div>';
+                console.error(error);
+            }
+        }
 
         // --- SISTEMA ADMINISTRATIVO: Gestão de Usuários ---
         function fecharAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
