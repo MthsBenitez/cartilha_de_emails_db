@@ -798,7 +798,7 @@
                     <i class="fa-solid fa-stopwatch"></i>
                 </div>
                 <div>
-                    <div class="kpi-title">Tempo Médio (Dia)</div>
+                    <div class="kpi-title">Duração Média da Sessão</div>
                     <div class="kpi-value" id="kpi-media-tempo">0h 0m</div>
                     <div class="kpi-trend trend-up"><i class="fa-solid fa-hand-pointer"></i> Clique para ver ofensores</div>
                 </div>
@@ -1365,10 +1365,9 @@
             const totalTimeSecs = filteredData.reduce((acc, curr) => acc + curr.duracaoSegundos, 0);
             
             let avgTimeSecs = 0;
-            // Calculate daily average per operator
-            if (uniqueOperators.length > 0) {
-                const uniqueDays = [...new Set(filteredData.map(d => d.data))].length || 1;
-                avgTimeSecs = totalTimeSecs / (uniqueOperators.length * uniqueDays);
+            // Cálculo da Duração Média da Sessão: Total de Tempo / Número de Eventos (N)
+            if (totalLogins > 0) {
+                avgTimeSecs = totalTimeSecs / totalLogins;
             }
 
             // Update UI KPIs
