@@ -745,6 +745,12 @@
             <!-- 1. Ilha de Controle de Dados -->
             <div class="filter-group" style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 6px 15px; border-radius: var(--radius-full); border: 1px solid var(--glass-border);">
                 <input type="date" class="input-glass" id="filter-date" title="Filtrar por data" style="padding: 6px 10px; font-size: 0.9rem; border: none; background: transparent; outline: none; box-shadow: none;">
+                
+                <!-- NOVO: Filtro de Agrupamento Estratégico (Operação) -->
+                <select class="input-glass" id="filter-operacao" style="padding: 6px 10px; font-size: 0.9rem; border: none; background: transparent; outline: none; color: var(--text-main);">
+                    <option value="" style="color: #000;">Todas as Operações</option>
+                </select>
+                
                 <button class="btn btn-outline" id="apply-filters" style="padding: 6px 15px; border-color: var(--glass-highlight);">Filtrar</button>
                 
                 <!-- NOVO: Botão Único de Importar Dados -->
@@ -1146,6 +1152,14 @@
         const filterDate = document.getElementById('filter-date');
         const applyFiltersBtn = document.getElementById('apply-filters');
         
+        // NOVO: Ativa o botão de Filtro e as mudanças (Slice & Dice)
+        if (applyFiltersBtn) applyFiltersBtn.addEventListener('click', applyFilters);
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'filter-operacao' || e.target.id === 'filter-date') {
+                applyFilters();
+            }
+        });
+        
         let lineChartInstance = null; // Variável global para o Gráfico de Linha
         
         // Mouse Tracking Effect for Glass Cards
@@ -1349,9 +1363,23 @@
 
         function applyFilters() {
             const selectedDate = filterDate.value;
+            const filterOp = document.getElementById('filter-operacao');
+            const selectedOperacao = filterOp ? filterOp.value : '';
+
+            // Dinamicamente cria as opções de Operação (Agrupamentos Estratégicos)
+            if (filterOp && filterOp.options.length <= 1) {
+                const operacoesUnicas = [...new Set(rawData.map(d => d.operacao).filter(op => op && op !== 'Deslogar'))].sort();
+                operacoesUnicas.forEach(op => {
+                    const option = document.createElement('option');
+                    option.value = op; option.text = op; option.style.color = '#000';
+                    filterOp.appendChild(option);
+                });
+            }
 
             filteredData = rawData.filter(d => {
-                return selectedDate ? d.data === selectedDate : true;
+                const matchDate = selectedDate ? d.data === selectedDate : true;
+                const matchOp = selectedOperacao ? d.operacao === selectedOperacao : true;
+                return matchDate && matchOp;
             });
 
             updateDashboard();
@@ -1499,6 +1527,14 @@
                 const totalDias = op.diasAtivos.size > 0 ? op.diasAtivos.size : 1;
                 const mediaDiaria = op.tempoTotal / totalDias;
                 
+                // NOVO: Cálculo da Taxa de Fragmentação de Sessão (TFS)
+                const tfs = (op.logins / totalDias).toFixed(1);
+                let badgeTFS = '';
+                // Se fragmentar 6 vezes ou mais ao dia, acende o alerta de ofensor
+                if (tfs >= 6) {
+                    badgeTFS = `<span style="color: var(--neon-pink); font-size: 0.7rem; border: 1px solid var(--neon-pink); padding: 2px 6px; border-radius: 4px; margin-left: 5px; background: rgba(247, 37, 133, 0.1);"><i class="fa-solid fa-triangle-exclamation"></i> Fragmentação: ${tfs}x/dia</span>`;
+                }
+                
                 const item = document.createElement('div');
                 item.className = 'operator-item';
                 
@@ -1506,9 +1542,10 @@
                     <div class="op-info">
                         <div class="op-avatar">${initial}</div>
                         <div class="op-details">
-                            <h4>${op.nome}</h4>
+                            <h4 style="display: flex; align-items: center;">${op.nome} ${badgeTFS}</h4>
                             <p>Mat: ${op.matricula}</p>
                         </div>
+                    </div>
                     </div>
                     <div class="op-stats">
                         <div class="time" style="font-size: 1.1rem; color: var(--neon-cyan); font-weight: 700;">
