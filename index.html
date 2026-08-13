@@ -701,7 +701,11 @@
         </div>
 
         <!-- Tela de Alteração Obrigatória de Senha -->
-        <div id="new-pass-box" class="glass-panel interactive-card auth-card" style="display: none;">
+        <div id="new-pass-box" class="glass-panel interactive-card auth-card" style="display: none; position: relative;">
+            <!-- NOVO: Botão Fechar "X" (Invisível no primeiro login) -->
+            <button id="close-pass-btn" class="close-btn" style="display: none; top: 15px; right: 15px;" onclick="fecharTrocaSenhaGeral()"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h2 style="color: var(--neon-cyan); font-weight: 700;">Bem-vindo!</h2>
             <h2 style="color: var(--neon-cyan); font-weight: 700;">Bem-vindo!</h2>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Por normas de segurança, é obrigatório alterar sua senha no primeiro acesso.</p>
             
@@ -722,11 +726,21 @@
     <div class="ambient-orb orb-3"></div>
 
     <!-- Navigation -->
+    <!-- Navigation -->
     <nav>
         <div class="logo">
             <i class="fa-solid fa-tooth"></i>
             Dental Uni
         </div>
+        
+        <!-- NOVA: Área de Abas (Tabs) -->
+        <div class="nav-tabs" style="display: flex; gap: 10px; flex: 1; margin-left: 40px;">
+            <button class="btn btn-primary" style="padding: 6px 15px; box-shadow: none; cursor: default;">
+                <i class="fa-solid fa-chart-pie"></i> Analítico de Sessões
+            </button>
+            <!-- O espaço já está pronto para as abas futuras! -->
+        </div>
+
         <div class="nav-actions" style="display: flex; align-items: center; gap: 20px;">
             
             <!-- 1. Ilha de Controle de Dados -->
@@ -734,17 +748,10 @@
                 <input type="date" class="input-glass" id="filter-date" title="Filtrar por data" style="padding: 6px 10px; font-size: 0.9rem; border: none; background: transparent; outline: none; box-shadow: none;">
                 <button class="btn btn-outline" id="apply-filters" style="padding: 6px 15px; border-color: var(--glass-highlight);">Filtrar</button>
                 
-                <!-- Botão de Importar -->
-                <label for="file-upload" class="btn btn-primary" id="btn-upload-label" style="padding: 6px 15px; margin-left: 5px;" title="Importar Sessões (Tempo)">
-                    <i class="fa-solid fa-stopwatch"></i> Importar Sessões
-                </label>
-                <input type="file" id="file-upload" accept=".xlsx, .xls">
-
-                <!-- NOVO: Botão de Importar Base de RH -->
-                <label for="file-upload-rh" class="btn btn-primary" id="btn-upload-rh-label" style="padding: 6px 15px; margin-left: 10px; background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple));" title="Importar Cadastro de Colaboradores">
-                    <i class="fa-solid fa-id-card"></i> Importar RH
-                </label>
-                <input type="file" id="file-upload-rh" accept=".xlsx, .xls" style="display: none;">
+                <!-- NOVO: Botão Único de Importar Dados -->
+                <button class="btn btn-primary" id="btn-open-import" style="padding: 6px 15px; margin-left: 5px;" onclick="abrirImportacao()" title="Importar Dados">
+                    <i class="fa-solid fa-file-import"></i> Importar
+                </button>
             </div>
 
             <!-- Divisor Vertical Visual -->
@@ -752,11 +759,6 @@
 
             <!-- 2. Ilha de Perfil e Sistema -->
             <div class="user-group" style="display: flex; align-items: center; gap: 12px;">
-                <!-- NOVO: Botão de Limpeza Mágica (Fica do lado de fora) -->
-                <button class="btn btn-outline" id="btn-limpar" style="display: none; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="limparUsuariosSemSessao()" title="Limpar base do RH">
-                    <i class="fa-solid fa-broom"></i> Limpar Ociosos
-                </button>
-
                 <button class="btn btn-outline" id="btn-admin" style="display: none; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="abrirAdmin()">
                     <i class="fa-solid fa-users-gear"></i> Gestão
                 </button>
@@ -769,7 +771,6 @@
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
-
         </div>
     </nav>
 
@@ -860,9 +861,50 @@
                     <i class="fa-solid fa-users-gear" style="color: var(--neon-cyan);"></i>
                     Controle de Usuários
                 </div>
+                <!-- NOVO: Botão de Cadastrar Usuário -->
+                <button class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 15px;" onclick="abrirCriacaoUsuario()">
+                    <i class="fa-solid fa-user-plus"></i> Novo Cadastro
+                </button>
             </div>
+            
+            <!-- NOVO: Formulário de Criação (Fica Oculto por Padrão) -->
+            <div id="admin-create-user-form" style="display: none; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 20px;">
+                <h4 style="color: var(--neon-cyan); margin-bottom: 15px;"><i class="fa-solid fa-address-card"></i> Cadastrar Novo Operador</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="novo-user-mat" class="input-glass" placeholder="Matrícula" style="flex: 1; min-width: 150px;">
+                    <input type="text" id="novo-user-nome" class="input-glass" placeholder="Nome Completo" style="flex: 2; min-width: 200px;">
+                    <button class="btn btn-primary" onclick="salvarNovoUsuario()">Cadastrar</button>
+                    <button class="btn btn-outline" onclick="fecharCriacaoUsuario()">Cancelar</button>
+                </div>
+            </div>
+
             <div class="operator-list" id="admin-user-list" style="margin-top: 20px;">
                 <!-- Lista de usuários será gerada pelo JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- NOVO: Modal de Importação (Popup) -->
+    <div class="detail-view" id="import-modal">
+        <div class="glass-panel detail-content interactive-card" style="max-width: 450px; padding: 30px; text-align: center;">
+            <button class="close-btn" onclick="fecharImportacao()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="panel-header" style="justify-content: center; margin-bottom: 20px;">
+                <div class="panel-title" style="color: var(--neon-cyan);">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Central de Importação
+                </div>
+            </div>
+            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.9rem;">Selecione abaixo qual tipo de base de dados você deseja enviar para o painel.</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <label for="file-upload" class="btn btn-outline" style="justify-content: center; padding: 15px; border-color: var(--neon-cyan);">
+                    <i class="fa-solid fa-stopwatch" style="font-size: 1.2rem; margin-right: 8px;"></i> Sessões (Tempo)
+                </label>
+                <input type="file" id="file-upload" accept=".xlsx, .xls" style="display: none;">
+
+                <label for="file-upload-rh" class="btn btn-outline" style="justify-content: center; padding: 15px; border-color: var(--neon-pink); color: var(--neon-pink);">
+                    <i class="fa-solid fa-id-card" style="font-size: 1.2rem; margin-right: 8px;"></i> Base de RH
+                </label>
+                <input type="file" id="file-upload-rh" accept=".xlsx, .xls" style="display: none;">
             </div>
         </div>
     </div>
@@ -912,7 +954,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2026 Nexus Analytics. Design Premium. Todos os direitos reservados.</p>
+        <p>&copy; 2026 Softmarketing. Todos os direitos reservados.</p>
     </footer>
 
     <script>
@@ -1043,14 +1085,13 @@
 
         // Desbloqueia e Carrega a Interface Correta com Personalização
         // Desbloqueia e Carrega a Interface Correta com Personalização
+        // Desbloqueia e Carrega a Interface Correta com Personalização
         async function liberarDashboard() {
             document.getElementById('auth-overlay').style.display = 'none';
             document.body.classList.add('dashboard-visible');
             
-            const btnUpload = document.getElementById('btn-upload-label');
-            const btnUploadRh = document.getElementById('btn-upload-rh-label');
+            const btnOpenImport = document.getElementById('btn-open-import');
             const btnAdmin = document.getElementById('btn-admin');
-            const btnLimpar = document.getElementById('btn-limpar');
             const tituloMenu = document.getElementById('user-greeting');
             const subTituloMenu = document.getElementById('user-subtitle');
             
@@ -1061,23 +1102,17 @@
 
             // Proteção Visual e Personalização
             if(!isAdmin) {
-                if(btnUpload) btnUpload.style.display = 'none';
-                if(btnUploadRh) btnUploadRh.style.display = 'none';
+                if(btnOpenImport) btnOpenImport.style.display = 'none';
                 if(btnAdmin) btnAdmin.style.display = 'none';
-                if(btnLimpar) btnLimpar.style.display = 'none';
                 
-                // Redesign exclusivo para o Operador
                 tituloMenu.innerText = `Olá, ${userName.split(' ')[0]}!`;
                 tituloMenu.style.fontSize = '4.5rem';
                 tituloMenu.style.color = 'var(--neon-cyan)';
                 subTituloMenu.innerText = "Bem-vindo ao seu painel exclusivo. Acompanhe seus resultados e histórico de sessões.";
             } else {
-                if(btnUpload) btnUpload.style.display = 'flex';
-                if(btnUploadRh) btnUploadRh.style.display = 'flex';
+                if(btnOpenImport) btnOpenImport.style.display = 'flex';
                 if(btnAdmin) btnAdmin.style.display = 'flex';
-                if(btnLimpar) btnLimpar.style.display = 'flex';
                 
-                // Visão Clássica do Administrador
                 tituloMenu.innerText = "Analítico de Sessões";
                 tituloMenu.style.fontSize = '3.5rem';
                 tituloMenu.style.color = ''; 
@@ -1086,7 +1121,6 @@
 
             carregarDadosDaNuvem();
         }
-
         // Puxa os dados do Banco ao invés do arquivo local
         function carregarDadosDaNuvem() {
             showLoader();
@@ -1594,90 +1628,60 @@
             document.getElementById('auth-overlay').style.display = 'flex';
             document.getElementById('login-box').style.display = 'none';
             document.getElementById('new-pass-box').style.display = 'flex';
-            // Atualiza o texto do modal para não parecer "Primeiro Acesso"
             document.querySelector('#new-pass-box p').innerText = "Crie uma nova senha de segurança para a sua conta.";
+            
+            // Habilita o "X" para fechar apenas se a pessoa já estiver logada no painel
+            if(currentUser) {
+                document.getElementById('close-pass-btn').style.display = 'block';
+            }
         }
+        
+        function fecharTrocaSenhaGeral() {
+            if(currentUser) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.body.classList.add('dashboard-visible');
+                document.getElementById('new-pass-box').style.display = 'none';
+                document.getElementById('close-pass-btn').style.display = 'none';
+            }
+        }
+
+        // --- SISTEMA DE IMPORTAÇÃO (POPUP) ---
+        function abrirImportacao() { document.getElementById('import-modal').style.display = 'flex'; }
+        function fecharImportacao() { document.getElementById('import-modal').style.display = 'none'; }
 
         // --- SISTEMA ADMINISTRATIVO: Gestão de Usuários ---
-        function fecharAdmin() {
-            document.getElementById('admin-modal').style.display = 'none';
+        function fecharAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
+        
+        // Funções do Novo Cadastro
+        function abrirCriacaoUsuario() { document.getElementById('admin-create-user-form').style.display = 'block'; }
+        function fecharCriacaoUsuario() { 
+            document.getElementById('admin-create-user-form').style.display = 'none'; 
+            document.getElementById('novo-user-mat').value = '';
+            document.getElementById('novo-user-nome').value = '';
         }
 
-        async function abrirAdmin() {
-            document.getElementById('admin-modal').style.display = 'flex';
-            const list = document.getElementById('admin-user-list');
-            list.innerHTML = '<div style="text-align: center; color: var(--text-muted);"><div class="spinner" style="margin: 0 auto 10px;"></div>Carregando equipe...</div>';
+        async function salvarNovoUsuario() {
+            const mat = document.getElementById('novo-user-mat').value.trim();
+            const nome = document.getElementById('novo-user-nome').value.trim();
             
+            if(!mat || !nome) { alert("Por favor, preencha a Matrícula e o Nome!"); return; }
+            
+            showLoader();
             try {
-                const snap = await db.ref('usuarios').once('value');
-                const usuarios = snap.val() || {};
-                
-                // O SEGREDO DA PERFORMANCE: Guardamos tudo nesta variável de memória primeiro
-                let htmlFinal = ''; 
-                
-                for(const mat in usuarios) {
-                    const u = usuarios[mat] || {};
-                    
-                    const isPrimeiroAcesso = u.primeiroAcesso === true;
-                    const isAdmin = u.admin === true;
-
-                    const statusSenha = isPrimeiroAcesso 
-                        ? '<span style="color:var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> Senha Padrão</span>' 
-                        : '<span style="color:var(--neon-cyan);"><i class="fa-solid fa-check"></i> Senha Alterada</span>';
-                    
-                    const role = isAdmin ? '<span style="color:var(--neon-purple); font-weight:bold;">Admin (Supervisor)</span>' : 'Operador';
-                    
-                    // Prevenção de quebra caso o nome esteja vazio na planilha
-                    let nomeOriginal = u.nome || u.NOME || mat || 'Desconhecido';
-                    const nomeExibicao = String(nomeOriginal).trim();
-                    const inicial = nomeExibicao.length > 0 ? nomeExibicao.charAt(0).toUpperCase() : '?';
-
-                    let actionButtons = '';
-                    if(mat !== 'gestaosoft') {
-                        const btnPromoverTexto = isAdmin ? 'Rebaixar' : 'Tornar Admin';
-                        const iconPromover = isAdmin ? 'fa-arrow-down' : 'fa-arrow-up';
-                        
-                        actionButtons = `
-                            <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="abrirPerfil('${mat}')" title="Ver Dossiê RH">
-                                <i class="fa-solid fa-address-card"></i> Dossiê
-                            </button>
-                            <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px;" onclick="toggleAdmin('${mat}', ${!isAdmin})">
-                                <i class="fa-solid ${iconPromover}"></i> ${btnPromoverTexto}
-                            </button>
-                            <button class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px; border-color: var(--neon-pink); color: var(--neon-pink);" onclick="excluirUsuario('${mat}')" title="Excluir">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        `;
-                    }
-
-                    // A mágica: Adiciona o HTML na memória, sem forçar o navegador a desenhar ainda
-                    htmlFinal += `
-                        <div class="operator-item" style="cursor: default; margin-bottom: 10px;">
-                            <div class="op-info">
-                                <div class="op-avatar" style="font-size: 1rem; width: 40px; height: 40px;">${inicial}</div>
-                                <div class="op-details">
-                                    <h4 style="margin-bottom: 2px;">${nomeExibicao} <span style="font-size:0.7rem; font-weight:normal; color:var(--text-muted);">(${mat})</span></h4>
-                                    <p>Acesso: ${role} | Status: ${statusSenha}</p>
-                                </div>
-                            </div>
-                            <div class="op-stats" style="display:flex; gap:10px; align-items: center;">
-                                ${actionButtons}
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // Desenhamos na tela apenas UMA vez no final de forma ultra rápida
-                if (Object.keys(usuarios).length === 0) {
-                    list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum usuário cadastrado.</div>';
-                } else {
-                    list.innerHTML = htmlFinal;
-                }
-
-            } catch (error) {
-                console.error("Erro de Processamento na Gestão:", error);
-                list.innerHTML = '<div style="text-align: center; color: var(--neon-pink); padding: 20px;"><i class="fa-solid fa-bug" style="font-size: 2rem; margin-bottom: 15px;"></i><br>Ops! Ocorreu um erro inesperado.<br>Atualize a página e tente novamente.</div>';
+                const senhaPadrao = await hashPassword('12345');
+                await db.ref('usuarios/' + mat).set({
+                    nome: nome,
+                    senha: senhaPadrao,
+                    primeiroAcesso: true,
+                    admin: false
+                });
+                alert(`Sucesso! Operador(a) ${nome} cadastrado(a) com a senha padrão "12345".`);
+                fecharCriacaoUsuario();
+                abrirAdmin(); // Recarrega a lista para mostrar o novato
+            } catch (err) {
+                alert("Erro ao cadastrar usuário. Tente novamente.");
             }
+            hideLoader();
         }
 
         async function toggleAdmin(mat, darAdmin) {
@@ -1694,57 +1698,6 @@
                 abrirAdmin(); // Recarrega a lista
             }
         }
-
-        // --- NOVA LÓGICA: Vassoura Mágica (Limpeza de Inativos) ---
-        // --- NOVA LÓGICA: Vassoura Mágica (Limpeza de Inativos em Lote/Alta Performance) ---
-        async function limparUsuariosSemSessao() {
-            if(!confirm("⚠️ ATENÇÃO: Isso vai varrer e apagar TODOS os usuários do RH que nunca tiveram tempo de sessão registrado no sistema. Deseja continuar?")) return;
-            
-            showLoader();
-            try {
-                // 1. Descobre quem são os operadores que realmente possuem sessões
-                const sessoesSnap = await db.ref('sessoes').once('value');
-                const sessoes = sessoesSnap.val() || [];
-                const matriculasComSessao = new Set();
-                
-                sessoes.forEach(s => {
-                    if(s && s.matricula) matriculasComSessao.add(s.matricula.toString());
-                });
-
-                // 2. Olha todos os cadastrados na base (incluindo os intrusos)
-                const usuariosSnap = await db.ref('usuarios').once('value');
-                const usuarios = usuariosSnap.val() || {};
-                
-                let pacotaoDeLimpeza = {};
-                let excluidos = 0;
-                
-                // 3. Prepara a lista negra (anota quem vai ser apagado na memória, sem travar a internet)
-                for(let mat in usuarios) {
-                    if(!matriculasComSessao.has(mat) && mat !== 'gestaosoft') {
-                        // Enviar "null" para o Firebase significa "delete isso imediatamente"
-                        pacotaoDeLimpeza[mat] = null; 
-                        excluidos++;
-                    }
-                }
-                
-                // 4. Executa a exclusão de todos de uma única vez (Alta Performance)
-                if (excluidos > 0) {
-                    await db.ref('usuarios').update(pacotaoDeLimpeza);
-                }
-                
-                hideLoader();
-                alert(`🧹 Limpeza Mágica concluída na velocidade da luz! Foram excluídos ${excluidos} perfis sem uso.`);
-                
-                // Recarrega a tela de gestão já limpinha
-                abrirAdmin(); 
-                
-            } catch (error) {
-                hideLoader();
-                console.error("Erro na limpeza:", error);
-                alert("Erro ao realizar a limpeza. Verifique sua conexão e tente novamente.");
-            }
-        }
-
         // --- NOVA LÓGICA: Fechar o Modal ao clicar no X ---
         document.getElementById('close-modal').addEventListener('click', () => {
             document.getElementById('detail-modal').style.display = 'none';
